@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: MessageApp
+  config:
+    import: optional:file:.env[.properties]
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            provider: google
+            client-id: ${CLIENT_ID}
+            client-secret: ${CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            scope: openid,profile
+        provider:
+         google:
+            issuer-uri: https://accounts.google.com
