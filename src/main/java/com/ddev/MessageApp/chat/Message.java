@@ -1,14 +1,16 @@
 package com.ddev.MessageApp.chat;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Message {
     private String body;
-    public String getBody(){
-        return body;
-    }
-
-    public Message(){}
-    public Message(String body){
-        this.body = body;
-    }
+    private Integer from;
+    private Integer to;
 }
