@@ -1,4 +1,4 @@
-package com.ddev.MessageApp.user.dto;
+package com.ddev.MessageApp.auth.dto;
 
 import lombok.*;
 

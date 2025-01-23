@@ -2,9 +2,9 @@ package com.ddev.MessageApp.user.service;
 
 import com.ddev.MessageApp.user.dto.LoginDTO;
 import com.ddev.MessageApp.user.dto.RegisterDTO;
-import com.ddev.MessageApp.user.dto.TokenDTO;
+import com.ddev.MessageApp.auth.dto.TokenDTO;
 import com.ddev.MessageApp.user.dto.UserDTO;
-import com.ddev.MessageApp.user.jwt.JwtUtil;
+import com.ddev.MessageApp.auth.jwt.JwtUtil;
 import com.ddev.MessageApp.user.model.Role;
 import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.UserRepository;
