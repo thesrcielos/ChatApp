@@ -2,27 +2,22 @@ package com.ddev.MessageApp.chat.model;
 
 import com.ddev.MessageApp.user.model.UserEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Builder
 @Table(name = "Chats")
 public class ChatEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @EmbeddedId
+    private ChatPK id;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("conversationId")
+    private Conversations conversation;
     @ManyToOne
-    private UserEntity user1;
-    @ManyToOne
-    private UserEntity user2;
-    private String message;
-    private LocalDateTime sentDate;
+    @MapsId("userId")
+    private UserEntity user;
 }
