@@ -15,6 +15,6 @@ import java.util.Optional;
 @Repository
 public interface ContactRepository extends JpaRepository<ContactEntity, Integer> {
     Page<ContactEntity> findByIdAndStatus(Integer userId, Status status, Pageable pageable);
-    @Query("SELECT c.user FROM CONTACTS c WHERE c.id = :cId")
-    Optional<UserEntity> findUserFromContact(@Param("profesorId") Integer cId);
+    @Query(value = "SELECT c.user FROM contacts c WHERE c.id = :cId", nativeQuery = true)
+    Optional<UserEntity> findUserFromContact(@Param("cId") Integer cId);
 }
