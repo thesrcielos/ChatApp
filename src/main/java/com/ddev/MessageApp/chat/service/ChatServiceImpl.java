@@ -2,10 +2,7 @@ package com.ddev.MessageApp.chat.service;
 
 import com.ddev.MessageApp.chat.dto.Message;
 import com.ddev.MessageApp.chat.dto.*;
-import com.ddev.MessageApp.chat.model.ChatEntity;
-import com.ddev.MessageApp.chat.model.ConversationType;
-import com.ddev.MessageApp.chat.model.Conversations;
-import com.ddev.MessageApp.chat.model.Messages;
+import com.ddev.MessageApp.chat.model.*;
 import com.ddev.MessageApp.chat.repository.ChatRepository;
 import com.ddev.MessageApp.chat.repository.ConversationRepository;
 import com.ddev.MessageApp.chat.repository.MessageRepository;
@@ -36,7 +33,7 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public void deleteMessage(UUID id) {
         if(!messageRepository.existsById(id)) {
-            throw new RuntimeException("Message with id " + id + " not exists");
+            throw new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404);
         }
         messageRepository.deleteById(id);
     }
@@ -44,7 +41,7 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public MessageEditResponse editMessage(EditMessageDTO editMessageDTO) {
         UUID id = editMessageDTO.getId();
-        Messages message = messageRepository.findById(editMessageDTO.getId()).orElseThrow(() -> new RuntimeException("Message mot found"));
+        Messages message = messageRepository.findById(editMessageDTO.getId()).orElseThrow(() -> new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404));
         message.setMessage(editMessageDTO.getMessage());
         messageRepository.save(message);
         return new MessageEditResponse( id, message.getMessage(), message.getSentAt());
@@ -70,7 +67,7 @@ public class ChatServiceImpl implements ChatService{
             conversation = createConversation();
             user = createChats(conversation, message.getContactId());
         }else{
-            conversation = conversationRepository.findById(conversationId).orElseThrow(() -> new RuntimeException("Conversation not found"));
+            conversation = conversationRepository.findById(conversationId).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONVERSATION_NOT_FOUND, 404));
             user = getUserFromContact(message.getContactId());
         }
         Messages messages = Messages.builder()
@@ -84,7 +81,7 @@ public class ChatServiceImpl implements ChatService{
     }
 
     private UserEntity getUserFromContact(Integer id) {
-        return contactRepository.findUserFromContact(id).orElseThrow(() -> new RuntimeException("Contact not exists."));
+        return contactRepository.findUserFromContact(id).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONTACT_NOT_EXIST, 404));
 
     }
     @Transactional
@@ -97,7 +94,7 @@ public class ChatServiceImpl implements ChatService{
 
     @Transactional
     public UserEntity createChats(Conversations conversation, Integer contactId) {
-        ContactEntity contact = contactRepository.findById(contactId).orElseThrow(() -> new RuntimeException("Contact not exists."));
+        ContactEntity contact = contactRepository.findById(contactId).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONTACT_NOT_EXIST, 404));
         ChatEntity chat1 = new ChatEntity(null,conversation, contact.getUser());
         ChatEntity chat2 = new ChatEntity(null,conversation, contact.getContact());
         chatRepository.save(chat1);
@@ -125,4 +122,5 @@ public class ChatServiceImpl implements ChatService{
         return new PaginatedListObject<>(messages, messagesPage.getNumber(),
                 messagesPage.getTotalPages(), messagesPage.getTotalElements());
     }
+
 }
