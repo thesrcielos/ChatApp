@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -17,7 +19,9 @@ public class ContactEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @ManyToOne
-    private UserEntity user1;
+    private UserEntity user;
     @ManyToOne
-    private UserEntity user2;
+    private UserEntity contact;
+    private Status status;
+    private LocalDateTime createdAt;
 }

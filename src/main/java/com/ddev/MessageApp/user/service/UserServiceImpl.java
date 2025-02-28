@@ -25,8 +25,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
-
-
     public List<UserEntity> getUsers() { return userRepository.findAll(); }
 
     @Override
@@ -37,7 +35,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public TokenDTO createUser(RegisterDTO registerDTO) {
         // Should check if the user already exist.
-        if(!verificateEmail(registerDTO.getEmail())){
+        if(!verifyEmail(registerDTO.getEmail())){
            throw new RuntimeException("Email in use");
         }
         UserEntity user = new UserEntity(
@@ -79,12 +77,11 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.deleteById(id);
     }
-    private boolean verificateEmail(String email){
+    private boolean verifyEmail(String email){
         return userRepository.findByEmail(email).isEmpty();
     }
     private UserEntity findUser(Integer id) {
-        if(userRepository.findById(id).isEmpty()) throw new RuntimeException("User not exists");
-        return userRepository.findById(id).get();
+        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not exists"));
     }
     private boolean notValidatePassword(String password){
            return password==null||!password.matches(".*[a-z].*")||!password.matches(".*[A-Z].*")
