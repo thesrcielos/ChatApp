@@ -81,7 +81,7 @@ public class ChatServiceImpl implements ChatService{
     }
 
     private UserEntity getUserFromContact(Integer id) {
-        return contactRepository.findUserFromContact(id).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONTACT_NOT_EXIST, 404));
+        return contactRepository.findUserFromContact(id).orElseThrow(() -> new UserExceptions(UserExceptions.CONTACT_NOT_EXIST, 404));
 
     }
     @Transactional
@@ -94,7 +94,7 @@ public class ChatServiceImpl implements ChatService{
 
     @Transactional
     public UserEntity createChats(Conversations conversation, Integer contactId) {
-        ContactEntity contact = contactRepository.findById(contactId).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONTACT_NOT_EXIST, 404));
+        ContactEntity contact = contactRepository.findById(contactId).orElseThrow(() -> new UserExceptions(UserExceptions.CONTACT_NOT_EXIST, 404));
         ChatEntity chat1 = new ChatEntity(null,conversation, contact.getUser());
         ChatEntity chat2 = new ChatEntity(null,conversation, contact.getContact());
         chatRepository.save(chat1);
