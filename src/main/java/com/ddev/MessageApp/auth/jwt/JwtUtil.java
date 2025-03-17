@@ -3,7 +3,15 @@ package com.ddev.MessageApp.auth.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -12,9 +20,10 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
-
-    private static final Logger LOGGER =  Logger.getLogger(JwtUtil.class.getName());
+    private final UserDetailsService userDetailsService;
+    private static final Logger LOGGER = Logger.getLogger(JwtUtil.class.getName());
     @Value("${SECRET_KEY}")
     private String secretKey;
 
@@ -23,7 +32,7 @@ public class JwtUtil {
                 subject(subject)
                 .claims(null)
                 .issuedAt(new Date(System.currentTimeMillis())).
-                expiration(new Date(System.currentTimeMillis()+2 * 24 * 60 * 60 * 1000)).
+                expiration(new Date(System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000)).
                 signWith(getKey()).compact();
     }
 
@@ -36,7 +45,7 @@ public class JwtUtil {
         return getClaim(token, Claims::getSubject);
     }
 
-    private Claims getAllClaims(String token){
+    private Claims getAllClaims(String token) {
         return Jwts
                 .parser()
                 .verifyWith(getKey())
@@ -45,13 +54,13 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    public <T> T getClaim(String token, Function<Claims,T> claimsResolver){
+    public <T> T getClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = getAllClaims(token);
         return claimsResolver.apply(claims);
 
     }
 
-    public boolean validate(String token){
+    public boolean validate(String token) {
         try {
             Jwts.parser()
                     .verifyWith(getKey())
@@ -73,4 +82,30 @@ public class JwtUtil {
         }
         return false;
     }
+
+    public Authentication validateAndAuthenticate(String token, HttpServletRequest request) {
+        if(token == null) return null;
+        if(!validate(token)) {
+            throw new IllegalArgumentException("Token malo");
+        }
+        final String username;
+        username = getUsernameFromToken(token);
+        if (username != null) {
+            UserDetails user = userDetailsService.loadUserByUsername(username);
+            if (validate(token)) {
+                UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
+                        user,
+                        null,
+                        user.getAuthorities());
+                if (request != null) {
+                    userToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                }
+                SecurityContextHolder.getContext().setAuthentication(userToken);
+
+                return userToken;
+            }
+        }
+        return null;
+    }
+
 }
