@@ -1,5 +1,7 @@
 package com.ddev.MessageApp.auth.jwt;
 
+import com.ddev.MessageApp.user.model.UserEntity;
+import com.ddev.MessageApp.user.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -28,9 +32,12 @@ public class JwtUtil {
     private String secretKey;
 
     public String getToken(String subject) {
+        UserEntity user = (UserEntity) userDetailsService.loadUserByUsername(subject);
+        Map<String, String> claims = new HashMap<>();
+        claims.put("id", user.getId().toString());
         return Jwts.builder().
                 subject(subject)
-                .claims(null)
+                .claims(claims)
                 .issuedAt(new Date(System.currentTimeMillis())).
                 expiration(new Date(System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000)).
                 signWith(getKey()).compact();
