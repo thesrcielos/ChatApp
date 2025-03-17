@@ -28,7 +28,6 @@ public class ContactController {
         contactService.blockContact(id);
     }
 
-
     @DeleteMapping("/users/contacts/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void deleteContact(@PathVariable Integer id) {
@@ -36,17 +35,17 @@ public class ContactController {
     }
 
     @GetMapping("/users/{id}/contacts/blocked")
-    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserBlockedContacts(@RequestParam Integer id, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserBlockedContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
     }
 
     @GetMapping("/users/{id}/contacts")
-    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserContacts(@RequestParam Integer id, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
     }
 
     @GetMapping("/users/{id}/contacts/requested")
-    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContacts(@RequestParam Integer id, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
     }
 

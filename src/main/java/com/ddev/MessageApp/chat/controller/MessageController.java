@@ -14,6 +14,7 @@ public class MessageController {
     @MessageMapping("/send")
     @SendTo("/topic/conversation")
     public Message getMessage(Message message){
+        System.out.println("message = " + message);
         //chatService.saveMessage(message);
         return message;
     }
