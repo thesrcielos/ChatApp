@@ -4,18 +4,23 @@ import com.ddev.MessageApp.chat.dto.Message;
 import com.ddev.MessageApp.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
 
 @Controller
 @RequiredArgsConstructor
 public class MessageController {
     private final ChatService chatService;
+    private final SimpMessagingTemplate messagingTemplate;
     @MessageMapping("/send")
-    @SendTo("/topic/conversation")
-    public Message getMessage(Message message){
+    public Message getMessage(@Payload Message message, Principal principal){
+        String recipient = principal.getName();
         System.out.println("message = " + message);
-        //chatService.saveMessage(message);
+        chatService.saveMessage(message);
         return message;
     }
 

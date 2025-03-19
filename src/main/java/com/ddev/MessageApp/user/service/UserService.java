@@ -12,5 +12,5 @@ public interface UserService {
     void changePassword(Integer id, String password);
     void changeName(Integer id, String name);
     void deleteUser(Integer userId);
-
+    Integer getUserId();
 }

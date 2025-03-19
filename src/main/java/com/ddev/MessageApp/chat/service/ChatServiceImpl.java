@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class ChatServiceImpl implements ChatService{
     private final ConversationRepository conversationRepository;
     private final ContactRepository contactRepository;
     private final ChatRepository chatRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public void deleteMessage(UUID id) {
@@ -63,12 +65,13 @@ public class ChatServiceImpl implements ChatService{
         Conversations conversation;
         UserEntity user;
         Integer conversationId = message.getConversationId();
+        ContactEntity contact = getContact(message.getContactId());
         if(conversationId == null) {
             conversation = createConversation();
-            user = createChats(conversation, message.getContactId());
+            user = createChats(conversation, contact);
         }else{
             conversation = conversationRepository.findById(conversationId).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONVERSATION_NOT_FOUND, 404));
-            user = getUserFromContact(message.getContactId());
+            user = contact.getUser();
         }
         Messages messages = Messages.builder()
                 .message(message.getContent())
@@ -77,13 +80,15 @@ public class ChatServiceImpl implements ChatService{
                 .sentAt(message.getSentAt())
                 .build();
         messageRepository.save(messages);
-        return new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), messages.getSentAt() );
+        MessageResponse response = new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), messages.getSentAt() );
+        messagingTemplate.convertAndSendToUser(contact.getContact().getEmail(), "/topic/conversation", response);
+        return response;
     }
 
-    private UserEntity getUserFromContact(Integer id) {
-        return contactRepository.findUserFromContact(id).orElseThrow(() -> new UserExceptions(UserExceptions.CONTACT_NOT_EXIST, 404));
-
+    private ContactEntity getContact(Integer id) {
+        return contactRepository.findById(id).orElseThrow(() -> new UserExceptions(UserExceptions.CONTACT_NOT_EXIST, 404));
     }
+
     @Transactional
     public Conversations createConversation() {
         Conversations conversations = new Conversations(null, LocalDate.now(), ConversationType.CHAT);
@@ -93,8 +98,7 @@ public class ChatServiceImpl implements ChatService{
     }
 
     @Transactional
-    public UserEntity createChats(Conversations conversation, Integer contactId) {
-        ContactEntity contact = contactRepository.findById(contactId).orElseThrow(() -> new UserExceptions(UserExceptions.CONTACT_NOT_EXIST, 404));
+    public UserEntity createChats(Conversations conversation, ContactEntity contact) {
         ChatEntity chat1 = new ChatEntity(null,conversation, contact.getUser());
         ChatEntity chat2 = new ChatEntity(null,conversation, contact.getContact());
         chatRepository.save(chat1);

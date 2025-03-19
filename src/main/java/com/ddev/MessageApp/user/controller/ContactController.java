@@ -3,6 +3,7 @@ package com.ddev.MessageApp.user.controller;
 import com.ddev.MessageApp.chat.dto.PaginatedListObject;
 import com.ddev.MessageApp.user.dto.ContactDTO;
 import com.ddev.MessageApp.user.dto.ContactResponse;
+import com.ddev.MessageApp.user.dto.ContactSearch;
 import com.ddev.MessageApp.user.service.ContactService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,12 +47,24 @@ public class ContactController {
 
     @GetMapping("/users/{id}/contacts/requested")
     public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
+        return ResponseEntity.ok(contactService.getUserContactRequests(id, page, size));
+    }
+
+    @DeleteMapping("/users/contacts/request/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void rejectContactRequest(@PathVariable Integer id) {
+        contactService.rejectContactRequest(id);
     }
 
     @PostMapping("/users/contacts/request")
     @ResponseStatus(HttpStatus.CREATED)
     public void sendContactRequest(@Valid @RequestBody ContactDTO contactDTO) {
         contactService.sendContactRequest(contactDTO);
+    }
+
+    @GetMapping("/users/coincidences")
+    public ResponseEntity<PaginatedListObject<ContactSearch>> getContactCoincidences(@RequestParam String pattern,
+                                                                                     @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
     }
 }
