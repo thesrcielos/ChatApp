@@ -18,4 +18,8 @@ public interface ContactRepository extends JpaRepository<ContactEntity, Integer>
     Page<ContactEntity> findByContactIdAndStatus(Integer userId, Status status, Pageable pageable);
     @Query(value = "SELECT c.user FROM contacts c WHERE c.id = :cId", nativeQuery = true)
     Optional<UserEntity> findUserFromContact(@Param("cId") Integer cId);
+    @Query(value = "SELECT COUNT(c.user) > 0 FROM contacts c " +
+            "WHERE (c.userId = :userId AND c.contactId = :contactId) " +
+            "   OR (c.userId = :contactId AND c.contactId = :userId)", nativeQuery = true)
+    boolean existsContact(@Param("userId") Integer userId, @Param("contactId") Integer contactId);
 }
