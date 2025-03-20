@@ -47,7 +47,7 @@ public class ContactServiceImpl implements ContactService{
     @Override
     public void blockContact(Integer id) {
         ContactEntity contact = findContact(id);
-        contact.setStatus(Status.ACCEPTED);
+        contact.setStatus(Status.BLOCKED);
         contactRepository.save(contact);
     }
 

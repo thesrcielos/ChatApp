@@ -42,7 +42,7 @@ public class ContactController {
 
     @GetMapping("/users/{id}/contacts")
     public ResponseEntity<PaginatedListObject<ContactResponse>> getUserContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
+        return ResponseEntity.ok(contactService.getUserContacts(id, page, size));
     }
 
     @GetMapping("/users/{id}/contacts/requested")
