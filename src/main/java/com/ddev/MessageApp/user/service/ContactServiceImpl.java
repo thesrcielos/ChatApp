@@ -1,11 +1,6 @@
 package com.ddev.MessageApp.user.service;
 
 import com.ddev.MessageApp.chat.dto.PaginatedListObject;
-import com.ddev.MessageApp.chat.model.ChatEntity;
-import com.ddev.MessageApp.chat.model.ConversationType;
-import com.ddev.MessageApp.chat.model.Conversations;
-import com.ddev.MessageApp.chat.repository.ChatRepository;
-import com.ddev.MessageApp.chat.repository.ConversationRepository;
 import com.ddev.MessageApp.user.dto.ContactResponse;
 import com.ddev.MessageApp.user.exception.UserException;
 import com.ddev.MessageApp.user.dto.ContactDTO;
@@ -21,9 +16,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,10 +69,18 @@ public class ContactServiceImpl implements ContactService{
     public void sendContactRequest(ContactDTO contactDTO) {
         UserEntity user = findUser(contactDTO.getUserId());
         UserEntity contact = findUser(contactDTO.getContactId());
-
+        verifyContact(user, contact);
         ContactEntity contactEntity = new ContactEntity(null, user, contact,
                 Status.PENDING, null);
         contactRepository.save(contactEntity);
+    }
+    private void verifyContact(UserEntity user, UserEntity contact) {
+        if(user.getId().equals(contact.getId())){
+            throw new UserException("Cannot send request to user", 404);
+        }
+        if (contactRepository.existsContact(user.getId(), contact.getId())) {
+            throw new UserException("The user is already a contact", 404);
+        }
     }
 
     private PaginatedListObject<ContactResponse> getUserContactsByState(Integer userId, int page, int size, Status status) {
