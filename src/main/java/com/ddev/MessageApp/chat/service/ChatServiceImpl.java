@@ -161,7 +161,7 @@ public class ChatServiceImpl implements ChatService{
 
     private <T> PaginatedListObject<T> getConversationMessages(Integer id, int page, int size, Function<Messages, T> mapFunction) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Messages> messagesPage = messageRepository.findByConversationsIdOrderBySentAtAsc(id, pageable);
+        Page<Messages> messagesPage = messageRepository.findByConversationsIdOrderBySentAtDesc(id, pageable);
         List<T> messages = messagesPage.getContent().stream()
                 .sorted(Comparator.comparing(Messages::getSentAt))
                 .map(mapFunction)
