@@ -1,5 +1,6 @@
 package com.ddev.MessageApp.user.service;
 
+import com.ddev.MessageApp.chat.dto.ChatDTO;
 import com.ddev.MessageApp.chat.dto.PaginatedListObject;
 import com.ddev.MessageApp.chat.model.ChatEntity;
 import com.ddev.MessageApp.chat.model.ConversationType;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class ContactServiceImpl implements ContactService{
     private final ContactRepository contactRepository;
     private final UserRepository userRepository;
+
     @Override
     @Transactional
     public void acceptContactRequest(Integer id) {
@@ -90,6 +92,8 @@ public class ContactServiceImpl implements ContactService{
         return new PaginatedListObject<>(users,
                 coincidences.getNumber(), coincidences.getTotalPages(), coincidences.getTotalElements());
     }
+
+
 
     @Override
     public void rejectContactRequest(Integer id) {

@@ -16,6 +16,10 @@ import java.util.Optional;
 public interface ContactRepository extends JpaRepository<ContactEntity, Integer> {
     Page<ContactEntity> findByUserIdAndStatus(Integer userId, Status status, Pageable pageable);
     Page<ContactEntity> findByContactIdAndStatus(Integer userId, Status status, Pageable pageable);
+    Optional<ContactEntity> findByUserIdAndContactId(Integer userId, Integer contactId);
     @Query(value = "SELECT c.user FROM contacts c WHERE c.id = :cId", nativeQuery = true)
     Optional<UserEntity> findUserFromContact(@Param("cId") Integer cId);
+    @Query("SELECT c FROM ContactEntity c WHERE c.user.id = :userId AND LOWER(c.contact.email) LIKE LOWER(CONCAT('%', :pattern, '%'))")
+    Page<ContactEntity> searchContacts(@Param("userId") Integer userId, @Param("pattern") String pattern, Pageable pageable);
+
 }

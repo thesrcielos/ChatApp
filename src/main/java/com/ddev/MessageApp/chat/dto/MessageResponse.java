@@ -13,8 +13,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageResponse {
-    private String content;
+    private String message;
     private Integer conversationId;
     private UUID messageId;
+    private Integer userId;
     private LocalDateTime sentAt;
 }
