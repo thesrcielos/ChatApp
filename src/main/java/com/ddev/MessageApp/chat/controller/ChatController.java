@@ -36,7 +36,7 @@ public class ChatController {
 
     @GetMapping("/conversation/{id}/messages")
     @ResponseStatus(HttpStatus.OK)
-    public PaginatedListObject<ChatMessage> getChatMessages(@PathVariable Integer id, int page, int size){
+    public PaginatedListObject<MessageResponse> getChatMessages(@PathVariable Integer id, int page, int size){
         return chatService.getChatMessages(id,page,size);
     }
 

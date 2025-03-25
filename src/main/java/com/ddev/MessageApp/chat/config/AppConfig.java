@@ -1,4 +1,4 @@
-package com.ddev.MessageApp.chat;
+package com.ddev.MessageApp.chat.config;
 
 import com.ddev.MessageApp.auth.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;

@@ -31,3 +31,6 @@ spring:
         provider:
          google:
             issuer-uri: https://accounts.google.com
+firebase:
+  credentials:
+    path: firebase-credentials.json

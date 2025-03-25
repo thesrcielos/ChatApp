@@ -1,5 +1,6 @@
 package com.ddev.MessageApp.chat.dto;
 
+import com.ddev.MessageApp.chat.model.FileType;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,4 +15,6 @@ public class Message {
     private Integer conversationId;
     private Integer contactId;
     LocalDateTime sentAt;
+    private FileType fileType;
+    private String fileUrl;
 }

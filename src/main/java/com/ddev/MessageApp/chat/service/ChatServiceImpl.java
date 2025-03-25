@@ -17,8 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -52,8 +55,8 @@ public class ChatServiceImpl implements ChatService{
     }
 
     @Override
-    public PaginatedListObject<ChatMessage> getChatMessages(Integer id, int page, int size) {
-        return getConversationMessages(id, page, size, this::messageToChatMessage);
+    public PaginatedListObject<MessageResponse> getChatMessages(Integer id, int page, int size) {
+        return getConversationMessages(id, page, size, this::messageToResponse);
     }
 
     @Override
@@ -99,10 +102,13 @@ public class ChatServiceImpl implements ChatService{
                 .message(message.getContent())
                 .conversations(conversation)
                 .user(user)
+                .type(message.getFileType())
+                .url(message.getFileUrl())
                 .sentAt(message.getSentAt())
                 .build();
         messageRepository.save(messages);
-        MessageResponse response = new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), contact.getUser().getId(),messages.getSentAt() );
+        MessageResponse response = new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), contact.getUser().getId(),
+                message.getFileType(), message.getFileUrl(),messages.getSentAt() );
         messagingTemplate.convertAndSendToUser(contact.getContact().getEmail(), "/topic/conversation", response);
         return response;
     }
@@ -149,8 +155,10 @@ public class ChatServiceImpl implements ChatService{
         return new ChatDTO(id, response);
     }
 
-    private ChatMessage messageToChatMessage(Messages message) {
-        return new ChatMessage(message.getId(), message.getUser().getId(),message.getMessage(), message.getSentAt());
+    private MessageResponse messageToResponse(Messages message) {
+        return new MessageResponse(message.getMessage(), message.getConversations().getId(),
+                message.getId(), message.getUser().getId(), message.getType(),
+                message.getUrl(), message.getSentAt());
     }
 
     private GroupMessage messageToGroupMessage(Messages message) {

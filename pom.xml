@@ -76,6 +76,12 @@
 		</dependency>
 		<!-- Procesador de anotaciones de MapStruct -->
 		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>9.2.0</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.mapstruct</groupId>
 			<artifactId>mapstruct-processor</artifactId>
 			<version>1.5.5.Final</version>

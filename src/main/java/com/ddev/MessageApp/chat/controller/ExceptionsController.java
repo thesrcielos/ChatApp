@@ -4,6 +4,7 @@ import com.ddev.MessageApp.chat.dto.ErrorDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,6 +14,15 @@ import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class ExceptionsController {
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorDetails> handleHttpRequestMethodNorSupported(MissingServletRequestParameterException ex) {
+        ErrorDetails errorDetails = ErrorDetails.builder()
+                .message(ex.getMessage())
+                .date(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorDetails> handleNotRequestParameter(MissingServletRequestParameterException ex) {
