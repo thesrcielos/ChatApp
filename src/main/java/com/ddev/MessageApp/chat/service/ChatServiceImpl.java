@@ -10,6 +10,7 @@ import com.ddev.MessageApp.user.dto.ContactResponse;
 import com.ddev.MessageApp.user.model.ContactEntity;
 import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.ContactRepository;
+import com.ddev.MessageApp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,11 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDate;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +31,7 @@ public class ChatServiceImpl implements ChatService{
 
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
+    private final UserRepository userRepository;
     private final ContactRepository contactRepository;
     private final ChatRepository chatRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -75,15 +74,30 @@ public class ChatServiceImpl implements ChatService{
     }
 
     private ChatDTO chatEntityToDTO(ChatEntity chat) {
+        Conversations conversations = chat.getConversation();
+        if (conversations.getType().equals(ConversationType.GROUP)) {
+            return new ChatDTO(conversations.getId(), null, true,
+                    conversationToGroupDto(conversations));
+        }
+
+        return new ChatDTO(chat.getConversation().getId(), chatToContactResponse(chat),
+                false, null);
+    }
+
+    private ContactResponse chatToContactResponse(ChatEntity chat) {
         Integer id = chatRepository.findUserIdByConversationAndNotUser(chat.getConversation().getId(), chat.getUser().getId())
                 .orElseThrow(() -> new UserExceptions("The other user of the chat was not found", 400));
         ContactEntity contact = contactRepository.findByUserIdAndContactId(chat.getUser().getId(), id)
                 .orElseThrow(() -> new UserExceptions("Contact not found", 400));
         UserEntity user = contact.getContact();
-        ContactResponse contactResponse = new ContactResponse(contact.getId(), id, user.getName(), user.getEmail(), contact.getCreatedAt());
-        return new ChatDTO(chat.getConversation().getId(), contactResponse);
+        return new ContactResponse(contact.getId(), id, user.getName(),
+                user.getEmail(), contact.getCreatedAt());
     }
 
+    private GroupDTO conversationToGroupDto(Conversations conversation) {
+        List<Integer> users = chatRepository.getUserListFromChat(conversation.getId());
+        return new GroupDTO(conversation.getName(), users);
+    }
     @Transactional
     @Override
     public MessageResponse saveMessage(Message message) {
@@ -113,13 +127,39 @@ public class ChatServiceImpl implements ChatService{
         return response;
     }
 
+    @Override
+    @Transactional
+    public ChatDTO createGroup(GroupRequest groupRequest) {
+        UserEntity user = findUser(groupRequest.getUserId());
+        Conversations conversations = new Conversations(null, LocalDate.now(),user, groupRequest.getName(), ConversationType.GROUP);
+        conversationRepository.save(conversations);
+
+        Integer conversationId = conversations.getId();
+        ChatPK chatPK = new ChatPK(conversationId, user.getId());
+        ChatEntity chat = new ChatEntity(chatPK, conversations, user);
+        chatRepository.save(chat);
+
+        for(Integer userId : groupRequest.getGroupUsers()) {
+            UserEntity userEntity = findUser(userId);
+            ChatPK pk = new ChatPK(conversationId, userId);
+            ChatEntity chatEntity = new ChatEntity(pk, conversations, userEntity);
+            chatRepository.save(chatEntity);
+        }
+
+        GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getGroupUsers());
+        return new ChatDTO(conversationId, null, true, groupDTO);
+    }
+
+    private UserEntity findUser(Integer id) {
+        return userRepository.findById(id).orElseThrow(()-> new UserExceptions("User not found", 404));
+    }
     private ContactEntity getContact(Integer id) {
         return contactRepository.findById(id).orElseThrow(() -> new UserExceptions(UserExceptions.CONTACT_NOT_EXIST, 404));
     }
 
     @Transactional
     public Conversations createConversation() {
-        Conversations conversations = new Conversations(null, LocalDate.now(), ConversationType.CHAT);
+        Conversations conversations = new Conversations(null, LocalDate.now(),null,null, ConversationType.CHAT);
         conversationRepository.save(conversations);
 
         return conversations;
@@ -152,7 +192,7 @@ public class ChatServiceImpl implements ChatService{
                 entity.getContact().getName(), entity.getContact().getEmail(), entity.getCreatedAt());
         Integer id = chatRepository.findConversationIdByUsers(entity.getContact().getId(), entity.getUser().getId())
                 .orElse(null);
-        return new ChatDTO(id, response);
+        return new ChatDTO(id, response, false, null);
     }
 
     private MessageResponse messageToResponse(Messages message) {

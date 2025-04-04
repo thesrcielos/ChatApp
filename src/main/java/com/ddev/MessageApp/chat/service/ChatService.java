@@ -15,5 +15,5 @@ public interface ChatService {
     PaginatedListObject<ChatDTO> getUserChats(Integer id, int page, int size);
     PaginatedListObject<ChatDTO> getUserContactsByPattern(Integer id, String pattern, int page, int size);
     MessageResponse saveMessage(Message message);
-
+    ChatDTO createGroup(GroupRequest groupRequest);
 }

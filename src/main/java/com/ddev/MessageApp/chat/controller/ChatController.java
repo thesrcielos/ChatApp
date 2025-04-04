@@ -53,6 +53,12 @@ public class ChatController {
         return chatService.getGroupMessages(id,page,size);
     }
 
+    @PostMapping("/group/conversations")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ChatDTO createGroup(@RequestBody GroupRequest request) {
+        return chatService.createGroup(request);
+    }
+
     @PostMapping("/messages")
     @ResponseStatus(HttpStatus.OK)
     public MessageResponse saveMessage(@RequestBody Message message){

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -22,4 +23,7 @@ public interface ChatRepository extends JpaRepository<ChatEntity, Integer> {
         HAVING COUNT(DISTINCT c.user.id) = 2
     """)
     Optional<Integer> findConversationIdByUsers(@Param("userId1") Integer userId1, @Param("userId2") Integer userId2);
+
+    @Query(value = "SELECT user_id FROM chats WHERE conversation_id = :conversationId", nativeQuery = true)
+    List<Integer> getUserListFromChat(@Param("conversationId") Integer conversationId);
 }

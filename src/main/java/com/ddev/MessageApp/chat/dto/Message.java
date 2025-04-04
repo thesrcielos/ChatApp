@@ -14,7 +14,7 @@ public class Message {
     private String content;
     private Integer conversationId;
     private Integer contactId;
-    LocalDateTime sentAt;
+    private LocalDateTime sentAt;
     private FileType fileType;
     private String fileUrl;
 }
