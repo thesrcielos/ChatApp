@@ -7,6 +7,7 @@ import com.ddev.MessageApp.chat.repository.ChatRepository;
 import com.ddev.MessageApp.chat.repository.ConversationRepository;
 import com.ddev.MessageApp.chat.repository.MessageRepository;
 import com.ddev.MessageApp.user.dto.ContactResponse;
+import com.ddev.MessageApp.user.dto.UserDTO;
 import com.ddev.MessageApp.user.model.ContactEntity;
 import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.ContactRepository;
@@ -42,6 +43,14 @@ public class ChatServiceImpl implements ChatService{
             throw new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404);
         }
         messageRepository.deleteById(id);
+    }
+
+    @Override
+    public List<UserDTO> getUsersInformation(Integer conversationId) {
+        return chatRepository.getUsersChatInfo(conversationId)
+                .stream().map((user) ->
+                    new UserDTO(user.getId(), user.getName(), user.getEmail())
+                ).toList();
     }
 
     @Override
@@ -104,13 +113,12 @@ public class ChatServiceImpl implements ChatService{
         Conversations conversation;
         UserEntity user;
         Integer conversationId = message.getConversationId();
-        ContactEntity contact = getContact(message.getContactId());
         if(conversationId == null) {
             conversation = createConversation();
-            user = createChats(conversation, contact);
+            user = createChats(conversation, message.getContactId());
         }else{
             conversation = conversationRepository.findById(conversationId).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONVERSATION_NOT_FOUND, 404));
-            user = contact.getUser();
+            user = findUser(conversation.getType(), message.getContactId());
         }
         Messages messages = Messages.builder()
                 .message(message.getContent())
@@ -121,12 +129,25 @@ public class ChatServiceImpl implements ChatService{
                 .sentAt(message.getSentAt())
                 .build();
         messageRepository.save(messages);
-        MessageResponse response = new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), contact.getUser().getId(),
+        MessageResponse response = new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), user.getId(),
                 message.getFileType(), message.getFileUrl(),messages.getSentAt() );
-        messagingTemplate.convertAndSendToUser(contact.getContact().getEmail(), "/topic/conversation", response);
+        sendMessagesByWS(conversation, response, user.getEmail());
         return response;
     }
 
+    private void sendMessagesByWS(Conversations conversations, MessageResponse response, String userEmail) {
+        List<String> userEmails = chatRepository.getUserEmailListFromChat(conversations.getId(), userEmail);
+        userEmails.forEach((email) -> messagingTemplate.convertAndSendToUser(email, "/topic/conversation", response));
+    }
+
+    private UserEntity findUser(ConversationType type, Integer id) {
+        if(type.equals(ConversationType.GROUP)){
+            return findUser(id);
+        }
+
+        return contactRepository.findUserFromContact(id)
+                .orElseThrow(() -> new UserExceptions("Contact not found", 404));
+    }
     @Override
     @Transactional
     public ChatDTO createGroup(GroupRequest groupRequest) {
@@ -166,7 +187,8 @@ public class ChatServiceImpl implements ChatService{
     }
 
     @Transactional
-    public UserEntity createChats(Conversations conversation, ContactEntity contact) {
+    public UserEntity createChats(Conversations conversation, Integer userId) {
+        ContactEntity contact = getContact(userId);
         ChatPK chatPK = new ChatPK(conversation.getId(), contact.getUser().getId());
         ChatPK chatPK2 = new ChatPK(conversation.getId(), contact.getContact().getId());
         ChatEntity chat1 = new ChatEntity(chatPK,conversation, contact.getUser());
@@ -178,6 +200,9 @@ public class ChatServiceImpl implements ChatService{
 
     @Override
     public PaginatedListObject<ChatDTO> getUserContactsByPattern(Integer id, String pattern, int page, int size) {
+        if (pattern.isEmpty()) {
+            return getUserChats(id, page, size);
+        }
         Pageable pageable = PageRequest.of(page, size);
         Page<ContactEntity> coincidences = contactRepository.searchContacts(id,pattern, pageable);
         List<ChatDTO> users = coincidences.get()

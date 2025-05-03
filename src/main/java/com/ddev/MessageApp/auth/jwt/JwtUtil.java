@@ -93,7 +93,7 @@ public class JwtUtil {
     public Authentication validateAndAuthenticate(String token, HttpServletRequest request) {
         if(token == null) return null;
         if(!validate(token)) {
-            throw new IllegalArgumentException("Token malo");
+            throw new IllegalArgumentException("Bad token");
         }
         final String username;
         username = getUsernameFromToken(token);

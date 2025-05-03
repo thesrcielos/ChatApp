@@ -50,6 +50,11 @@ public class ContactController {
         return ResponseEntity.ok(contactService.getUserContactRequests(id, page, size));
     }
 
+    @GetMapping("/users/{id}/contacts/requested-sent")
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContactsSent(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getUserContactRequestsSent(id, page, size));
+    }
+
     @DeleteMapping("/users/contacts/request/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void rejectContactRequest(@PathVariable Integer id) {
@@ -67,4 +72,11 @@ public class ContactController {
                                                                                      @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
     }
+
+    @GetMapping("/users/{id}/coincidences")
+    public ResponseEntity<PaginatedListObject<ContactSearch>> getContactCoincidences(@PathVariable Integer id, @RequestParam String pattern,
+                                                                                     @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
+    }
+
 }

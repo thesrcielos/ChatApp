@@ -3,6 +3,7 @@ package com.ddev.MessageApp.user.controller;
 import com.ddev.MessageApp.user.dto.LoginDTO;
 import com.ddev.MessageApp.user.dto.RegisterDTO;
 import com.ddev.MessageApp.auth.dto.TokenDTO;
+import com.ddev.MessageApp.user.dto.UserDTO;
 import com.ddev.MessageApp.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

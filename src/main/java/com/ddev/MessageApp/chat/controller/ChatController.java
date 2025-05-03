@@ -2,12 +2,14 @@ package com.ddev.MessageApp.chat.controller;
 
 import com.ddev.MessageApp.chat.dto.*;
 import com.ddev.MessageApp.chat.service.ChatService;
+import com.ddev.MessageApp.user.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -15,6 +17,12 @@ import java.util.UUID;
 @RequestMapping("/api/chats")
 public class ChatController {
     private final ChatService chatService;
+
+    @GetMapping("/{id}/users")
+    @ResponseStatus(HttpStatus.OK)
+    public List<UserDTO> getUsersChatsInfo(@PathVariable Integer id) {
+        return chatService.getUsersInformation(id);
+    }
 
     @GetMapping("/users/{id}")
     public ResponseEntity<PaginatedListObject<ChatDTO>> getUserChats(@PathVariable Integer id,
@@ -56,6 +64,7 @@ public class ChatController {
     @PostMapping("/group/conversations")
     @ResponseStatus(HttpStatus.CREATED)
     public ChatDTO createGroup(@RequestBody GroupRequest request) {
+        System.out.println("request = " + request);
         return chatService.createGroup(request);
     }
 

@@ -17,8 +17,6 @@ public class MessageController {
     private final SimpMessagingTemplate messagingTemplate;
     @MessageMapping("/send")
     public Message getMessage(@Payload Message message, Principal principal){
-        String recipient = principal.getName();
-        System.out.println("message = " + message);
         chatService.saveMessage(message);
         return message;
     }

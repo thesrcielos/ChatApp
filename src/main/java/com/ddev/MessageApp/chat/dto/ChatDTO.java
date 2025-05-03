@@ -9,6 +9,6 @@ import lombok.Getter;
 public class ChatDTO {
     private Integer id;
     private ContactResponse contact;
-    private boolean isGroup;
-    private GroupDTO groupResponse;
+    private Boolean isGroup;
+    private GroupDTO group;
 }

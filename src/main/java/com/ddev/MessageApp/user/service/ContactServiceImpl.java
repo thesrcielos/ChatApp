@@ -83,9 +83,23 @@ public class ContactServiceImpl implements ContactService{
     }
 
     @Override
+    public PaginatedListObject<ContactResponse> getUserContactRequestsSent(Integer userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ContactEntity> response = contactRepository.findByUserIdAndStatus(userId, Status.PENDING, pageable);
+        List<ContactResponse> users = response.getContent()
+                .stream()
+                .map(entity -> new ContactResponse(entity.getId(),
+                        entity.getContact().getId(), entity.getContact().getName(),
+                        entity.getContact().getEmail(), entity.getCreatedAt()))
+                .toList();
+        return new PaginatedListObject<>(users,
+                response.getNumber(), response.getTotalPages(), response.getTotalElements());
+    }
+
+    @Override
     public PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<UserEntity> coincidences = userRepository.findByEmailContainingIgnoreCase(pattern, pageable);
+        Page<UserEntity> coincidences = userRepository.findByEmailContainingIgnoreCaseAndNameContainingIgnoreCase(pattern, pattern,pageable);
         List<ContactSearch> users = coincidences.get()
                 .map(this::userEntityToContactSearch)
                 .toList();
@@ -112,7 +126,7 @@ public class ContactServiceImpl implements ContactService{
 
     private PaginatedListObject<ContactResponse> getUserContactsByState(Integer userId, int page, int size, Status status) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ContactEntity> response = contactRepository.findByUserIdAndStatus(userId, status, pageable);
+        Page<ContactEntity> response = contactRepository.findNativeContactsByUserIdAndStatus(userId, status, pageable);
         List<ContactResponse> users = response.getContent()
                 .stream()
                 .map(this::contactEntityToResponse)

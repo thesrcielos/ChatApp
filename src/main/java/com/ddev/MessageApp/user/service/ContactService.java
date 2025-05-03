@@ -12,6 +12,7 @@ public interface ContactService {
     PaginatedListObject<ContactResponse> getUserBlockedContacts(Integer userId, int page, int size);
     PaginatedListObject<ContactResponse> getUserContacts(Integer userId, int page, int size);
     PaginatedListObject<ContactResponse> getUserContactRequests(Integer userId, int page, int size);
+    PaginatedListObject<ContactResponse> getUserContactRequestsSent(Integer userId, int page, int size);
     PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int page, int size);
     void rejectContactRequest(Integer id);
     void sendContactRequest(ContactDTO contactDTO);
