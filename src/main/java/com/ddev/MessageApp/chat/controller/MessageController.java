@@ -1,16 +1,24 @@
 package com.ddev.MessageApp.chat.controller;
 
-import com.ddev.MessageApp.chat.Message;
+import com.ddev.MessageApp.chat.dto.Message;
+import com.ddev.MessageApp.chat.service.ChatService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-@Controller
-public class MessageController {
+import java.security.Principal;
 
+@Controller
+@RequiredArgsConstructor
+public class MessageController {
+    private final ChatService chatService;
+    private final SimpMessagingTemplate messagingTemplate;
     @MessageMapping("/send")
-    @SendTo("/topic/conversation")
-    public Message getMessage(Message message){
-        return new Message("message was " + message.getBody());
+    public Message getMessage(@Payload Message message, Principal principal){
+        chatService.saveMessage(message);
+        return message;
     }
+
 }
