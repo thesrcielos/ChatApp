@@ -5,12 +5,15 @@ import com.ddev.MessageApp.user.dto.RegisterDTO;
 import com.ddev.MessageApp.auth.dto.TokenDTO;
 import com.ddev.MessageApp.user.dto.UserDTO;
 import com.ddev.MessageApp.auth.jwt.JwtUtil;
+import com.ddev.MessageApp.user.exception.UserException;
 import com.ddev.MessageApp.user.model.Role;
 import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -87,6 +90,20 @@ public class UserServiceImpl implements UserService {
            return password==null||!password.matches(".*[a-z].*")||!password.matches(".*[A-Z].*")
                ||!password.matches(".*\\d.*")|| !password.matches(".*[@$!%*?&#].*")||
                    password.length() < 8;
+    }
+
+    @Override
+    public Integer getUserId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if (principal instanceof UserDetails) {
+            email = ((UserDetails) principal).getUsername();
+
+        } else {
+            email = null;
+        }
+        UserEntity user = userRepository.findByEmail(email).orElseThrow(() -> new UserException("User not exists", 400));
+        return user.getId();
     }
 
 }

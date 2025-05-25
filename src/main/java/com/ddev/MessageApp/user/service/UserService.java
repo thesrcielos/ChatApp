@@ -5,6 +5,8 @@ import com.ddev.MessageApp.user.dto.RegisterDTO;
 import com.ddev.MessageApp.auth.dto.TokenDTO;
 import com.ddev.MessageApp.user.dto.UserDTO;
 
+import java.util.List;
+
 public interface UserService {
     TokenDTO createUser(RegisterDTO registerDTO);
     UserDTO getUser(Integer id);
@@ -12,5 +14,5 @@ public interface UserService {
     void changePassword(Integer id, String password);
     void changeName(Integer id, String name);
     void deleteUser(Integer userId);
-
+    Integer getUserId();
 }

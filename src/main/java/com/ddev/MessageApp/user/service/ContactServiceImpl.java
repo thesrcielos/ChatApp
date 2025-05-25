@@ -1,12 +1,9 @@
 package com.ddev.MessageApp.user.service;
 
+import com.ddev.MessageApp.chat.dto.ChatDTO;
 import com.ddev.MessageApp.chat.dto.PaginatedListObject;
-import com.ddev.MessageApp.chat.model.ChatEntity;
-import com.ddev.MessageApp.chat.model.ConversationType;
-import com.ddev.MessageApp.chat.model.Conversations;
-import com.ddev.MessageApp.chat.repository.ChatRepository;
-import com.ddev.MessageApp.chat.repository.ConversationRepository;
 import com.ddev.MessageApp.user.dto.ContactResponse;
+import com.ddev.MessageApp.user.dto.ContactSearch;
 import com.ddev.MessageApp.user.exception.UserException;
 import com.ddev.MessageApp.user.dto.ContactDTO;
 import com.ddev.MessageApp.user.model.ContactEntity;
@@ -21,9 +18,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +28,7 @@ import java.util.stream.Collectors;
 public class ContactServiceImpl implements ContactService{
     private final ContactRepository contactRepository;
     private final UserRepository userRepository;
+
     @Override
     @Transactional
     public void acceptContactRequest(Integer id) {
@@ -46,7 +44,7 @@ public class ContactServiceImpl implements ContactService{
     @Override
     public void blockContact(Integer id) {
         ContactEntity contact = findContact(id);
-        contact.setStatus(Status.ACCEPTED);
+        contact.setStatus(Status.BLOCKED);
         contactRepository.save(contact);
     }
 
@@ -67,33 +65,86 @@ public class ContactServiceImpl implements ContactService{
 
     @Override
     public PaginatedListObject<ContactResponse> getUserContactRequests(Integer userId, int page, int size) {
-        return getUserContactsByState(userId, page, size, Status.PENDING);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ContactEntity> response = contactRepository.findByContactIdAndStatus(userId, Status.PENDING, pageable);
+        List<ContactResponse> users = response.getContent()
+                .stream()
+                .map(entity -> new ContactResponse(entity.getId(),
+                        entity.getUser().getId(), entity.getUser().getName(),
+                        entity.getUser().getEmail(), entity.getCreatedAt()))
+                .toList();
+        return new PaginatedListObject<>(users,
+                response.getNumber(), response.getTotalPages(), response.getTotalElements());
+    }
+
+    @Override
+    public PaginatedListObject<ContactResponse> getUserContactRequestsSent(Integer userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ContactEntity> response = contactRepository.findByUserIdAndStatus(userId, Status.PENDING, pageable);
+        List<ContactResponse> users = response.getContent()
+                .stream()
+                .map(entity -> new ContactResponse(entity.getId(),
+                        entity.getContact().getId(), entity.getContact().getName(),
+                        entity.getContact().getEmail(), entity.getCreatedAt()))
+                .toList();
+        return new PaginatedListObject<>(users,
+                response.getNumber(), response.getTotalPages(), response.getTotalElements());
+    }
+
+    @Override
+    public PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UserEntity> coincidences = userRepository.findByEmailContainingIgnoreCaseAndNameContainingIgnoreCase(pattern, pattern,pageable);
+        List<ContactSearch> users = coincidences.get()
+                .map(this::userEntityToContactSearch)
+                .toList();
+        return new PaginatedListObject<>(users,
+                coincidences.getNumber(), coincidences.getTotalPages(), coincidences.getTotalElements());
+    }
+
+
+
+    @Override
+    public void rejectContactRequest(Integer id) {
+        contactRepository.deleteById(id);
     }
 
     @Override
     public void sendContactRequest(ContactDTO contactDTO) {
         UserEntity user = findUser(contactDTO.getUserId());
         UserEntity contact = findUser(contactDTO.getContactId());
-
+        verifyContact(user, contact);
         ContactEntity contactEntity = new ContactEntity(null, user, contact,
                 Status.PENDING, null);
         contactRepository.save(contactEntity);
     }
+    private void verifyContact(UserEntity user, UserEntity contact) {
+        if(user.getId().equals(contact.getId())){
+            throw new UserException("Cannot send request to user", 404);
+        }
+        if (contactRepository.existsContact(user.getId(), contact.getId())) {
+            throw new UserException("The user is already a contact", 404);
+        }
+    }
 
     private PaginatedListObject<ContactResponse> getUserContactsByState(Integer userId, int page, int size, Status status) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ContactEntity> response = contactRepository.findByIdAndStatus(userId, status, pageable);
-        List<ContactResponse> blockedUsers = response.getContent()
+        Page<ContactEntity> response = contactRepository.findNativeContactsByUserIdAndStatus(userId, status, pageable);
+        List<ContactResponse> users = response.getContent()
                 .stream()
                 .map(this::contactEntityToResponse)
-                .collect(Collectors.toList());
-        return new PaginatedListObject<>(blockedUsers,
+                .toList();
+        return new PaginatedListObject<>(users,
                 response.getNumber(), response.getTotalPages(), response.getTotalElements());
+    }
+
+    private ContactSearch userEntityToContactSearch(UserEntity user) {
+        return new ContactSearch(user.getId(), user.getEmail(), user.getName());
     }
 
     private ContactResponse contactEntityToResponse(ContactEntity entity) {
         return new ContactResponse(entity.getId(), entity.getContact().getId(),
-                entity.getContact().getName(), entity.getCreatedAt());
+                entity.getContact().getName(), entity.getContact().getEmail(), entity.getCreatedAt());
     }
 
     private ContactEntity findContact(Integer id) {

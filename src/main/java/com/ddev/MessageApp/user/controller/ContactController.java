@@ -3,6 +3,7 @@ package com.ddev.MessageApp.user.controller;
 import com.ddev.MessageApp.chat.dto.PaginatedListObject;
 import com.ddev.MessageApp.user.dto.ContactDTO;
 import com.ddev.MessageApp.user.dto.ContactResponse;
+import com.ddev.MessageApp.user.dto.ContactSearch;
 import com.ddev.MessageApp.user.service.ContactService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,6 @@ public class ContactController {
         contactService.blockContact(id);
     }
 
-
     @DeleteMapping("/users/contacts/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void deleteContact(@PathVariable Integer id) {
@@ -36,18 +36,29 @@ public class ContactController {
     }
 
     @GetMapping("/users/{id}/contacts/blocked")
-    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserBlockedContacts(@RequestParam Integer id, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserBlockedContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
     }
 
     @GetMapping("/users/{id}/contacts")
-    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserContacts(@RequestParam Integer id, @RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getUserContacts(id, page, size));
     }
 
     @GetMapping("/users/{id}/contacts/requested")
-    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContacts(@RequestParam Integer id, @RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(contactService.getUserBlockedContacts(id, page, size));
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContacts(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getUserContactRequests(id, page, size));
+    }
+
+    @GetMapping("/users/{id}/contacts/requested-sent")
+    public ResponseEntity<PaginatedListObject<ContactResponse>> getUserRequestedContactsSent(@PathVariable Integer id, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getUserContactRequestsSent(id, page, size));
+    }
+
+    @DeleteMapping("/users/contacts/request/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void rejectContactRequest(@PathVariable Integer id) {
+        contactService.rejectContactRequest(id);
     }
 
     @PostMapping("/users/contacts/request")
@@ -55,4 +66,17 @@ public class ContactController {
     public void sendContactRequest(@Valid @RequestBody ContactDTO contactDTO) {
         contactService.sendContactRequest(contactDTO);
     }
+
+    @GetMapping("/users/coincidences")
+    public ResponseEntity<PaginatedListObject<ContactSearch>> getContactCoincidences(@RequestParam String pattern,
+                                                                                     @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
+    }
+
+    @GetMapping("/users/{id}/coincidences")
+    public ResponseEntity<PaginatedListObject<ContactSearch>> getContactCoincidences(@PathVariable Integer id, @RequestParam String pattern,
+                                                                                     @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
+    }
+
 }

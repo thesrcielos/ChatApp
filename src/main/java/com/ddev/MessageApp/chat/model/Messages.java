@@ -27,4 +27,7 @@ public class Messages {
     private String message;
     private LocalDateTime sentAt;
     private boolean seen;
+    private FileType type;
+    private String url;
+    private String fileType;
 }

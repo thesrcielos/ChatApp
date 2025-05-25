@@ -1,5 +1,6 @@
 package com.ddev.MessageApp.chat.dto;
 
+import com.ddev.MessageApp.chat.model.FileType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +14,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageResponse {
-    private String content;
+    private String message;
     private Integer conversationId;
     private UUID messageId;
+    private Integer userId;
+    private FileType fileType;
+    private String fileUrl;
     private LocalDateTime sentAt;
 }
