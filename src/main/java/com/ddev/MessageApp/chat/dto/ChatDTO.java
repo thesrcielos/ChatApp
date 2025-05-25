@@ -4,6 +4,8 @@ import com.ddev.MessageApp.user.dto.ContactResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
 @Getter
 public class ChatDTO {
@@ -11,4 +13,5 @@ public class ChatDTO {
     private ContactResponse contact;
     private Boolean isGroup;
     private GroupDTO group;
+    private Integer unseenMessages;
 }

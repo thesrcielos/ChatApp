@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Conversations")
@@ -21,4 +22,5 @@ public class Conversations {
     private UserEntity createdBy;
     private String name;
     private ConversationType type;
+    private LocalDateTime lastActivity;
 }

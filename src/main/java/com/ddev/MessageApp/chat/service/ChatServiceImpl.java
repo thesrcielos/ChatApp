@@ -13,14 +13,17 @@ import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.ContactRepository;
 import com.ddev.MessageApp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +32,6 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService{
-
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
@@ -68,8 +70,15 @@ public class ChatServiceImpl implements ChatService{
     }
 
     @Override
-    public PaginatedListObject<GroupMessage> getGroupMessages(Integer id, int page, int size) {
-        return getConversationMessages(id, page, size, this::messageToGroupMessage);
+    public PaginatedListObject<MessageResponse> getMessagesBefore(Integer conversationId, LocalDateTime date, Integer size) {
+        Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "sentAt"));
+        Page<Messages> page = messageRepository.findByConversationsIdAndSentAtLessThan(conversationId, date, pageable);
+        page.get().forEach(System.out::println);
+        List<MessageResponse> values = page.get()
+                .map(this::messageToResponse)
+                .sorted(Comparator.comparing(MessageResponse::getSentAt))
+                .toList();
+        return new PaginatedListObject<>(values, 0, page.getTotalPages(), page.getTotalElements());
     }
 
     @Override
@@ -77,6 +86,7 @@ public class ChatServiceImpl implements ChatService{
         Pageable pageable = PageRequest.of(page, size);
         Page<ChatEntity> result = chatRepository.findByUserId(id, pageable);
         List<ChatDTO> chats = result.get()
+                .sorted(Comparator.comparing((ChatEntity c) -> c.getConversation().getLastActivity()).reversed())
                 .map(this::chatEntityToDTO)
                 .toList();
         return new PaginatedListObject<>(chats, page, result.getTotalPages(), result.getTotalElements());
@@ -84,13 +94,15 @@ public class ChatServiceImpl implements ChatService{
 
     private ChatDTO chatEntityToDTO(ChatEntity chat) {
         Conversations conversations = chat.getConversation();
+        LocalDateTime date = chat.getLastMessageSeen() != null ? chat.getLastMessageSeen().getSentAt() : LocalDateTime.now();
+        Integer unseenMessages = messageRepository.countUnseenMessages(date, conversations.getId());
         if (conversations.getType().equals(ConversationType.GROUP)) {
             return new ChatDTO(conversations.getId(), null, true,
-                    conversationToGroupDto(conversations));
+                    conversationToGroupDto(conversations), unseenMessages);
         }
 
         return new ChatDTO(chat.getConversation().getId(), chatToContactResponse(chat),
-                false, null);
+                false, null, unseenMessages);
     }
 
     private ContactResponse chatToContactResponse(ChatEntity chat) {
@@ -107,19 +119,13 @@ public class ChatServiceImpl implements ChatService{
         List<Integer> users = chatRepository.getUserListFromChat(conversation.getId());
         return new GroupDTO(conversation.getName(), users);
     }
+
     @Transactional
     @Override
     public MessageResponse saveMessage(Message message) {
-        Conversations conversation;
-        UserEntity user;
-        Integer conversationId = message.getConversationId();
-        if(conversationId == null) {
-            conversation = createConversation();
-            user = createChats(conversation, message.getContactId());
-        }else{
-            conversation = conversationRepository.findById(conversationId).orElseThrow(() -> new ChatExceptions(ChatExceptions.CONVERSATION_NOT_FOUND, 404));
-            user = findUser(conversation.getType(), message.getContactId());
-        }
+        Conversations conversation = getOrCreateConversation(message);
+        UserEntity user = getUserForConversation(conversation, message);
+
         Messages messages = Messages.builder()
                 .message(message.getContent())
                 .conversations(conversation)
@@ -128,12 +134,47 @@ public class ChatServiceImpl implements ChatService{
                 .url(message.getFileUrl())
                 .sentAt(message.getSentAt())
                 .build();
+
         messageRepository.save(messages);
-        MessageResponse response = new MessageResponse(messages.getMessage(), conversation.getId(), messages.getId(), user.getId(),
-                message.getFileType(), message.getFileUrl(),messages.getSentAt() );
+        updateLastActivity(conversation, message.getSentAt());
+
+        MessageResponse response = buildMessageResponse(message, messages, conversation, user);
         sendMessagesByWS(conversation, response, user.getEmail());
         return response;
     }
+
+    private void updateLastActivity(Conversations conversation, LocalDateTime sentAt) {
+        conversation.setLastActivity(sentAt);
+        conversationRepository.save(conversation);
+    }
+
+    private MessageResponse buildMessageResponse(Message message, Messages messages,
+                                                 Conversations conversation, UserEntity user) {
+        return new MessageResponse(
+                messages.getMessage(),
+                conversation.getId(),
+                messages.getId(),
+                user.getId(),
+                message.getFileType(),
+                message.getFileUrl(),
+                messages.getSentAt()
+        );
+    }
+
+    private Conversations getOrCreateConversation(Message message) {
+        if (message.getConversationId() == null) {
+            Conversations conversation = createConversation();
+            createChats(conversation, message.getContactId());
+            return conversation;
+        }
+        return conversationRepository.findById(message.getConversationId())
+                .orElseThrow(() -> new ChatExceptions(ChatExceptions.CONVERSATION_NOT_FOUND, 404));
+    }
+
+    private UserEntity getUserForConversation(Conversations conversation, Message message) {
+        return findUser(conversation.getType(), message.getContactId());
+    }
+
 
     private void sendMessagesByWS(Conversations conversations, MessageResponse response, String userEmail) {
         List<String> userEmails = chatRepository.getUserEmailListFromChat(conversations.getId(), userEmail);
@@ -144,31 +185,41 @@ public class ChatServiceImpl implements ChatService{
         if(type.equals(ConversationType.GROUP)){
             return findUser(id);
         }
-
         return contactRepository.findUserFromContact(id)
                 .orElseThrow(() -> new UserExceptions("Contact not found", 404));
     }
+
     @Override
     @Transactional
     public ChatDTO createGroup(GroupRequest groupRequest) {
-        UserEntity user = findUser(groupRequest.getUserId());
-        Conversations conversations = new Conversations(null, LocalDate.now(),user, groupRequest.getName(), ConversationType.GROUP);
+        Conversations conversations = createGroupConversation(groupRequest.getUserId(), groupRequest.getName());
+        createGroupChats(groupRequest.getGroupUsers(), conversations);
+        GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getGroupUsers());
+
+        return new ChatDTO(conversations.getId(), null, true, groupDTO, 0);
+    }
+
+    private Conversations createGroupConversation(Integer userId, String name) {
+        UserEntity user = findUser(userId);
+        Conversations conversations = new Conversations(null, LocalDate.now(),user, name, ConversationType.GROUP, LocalDateTime.now());
         conversationRepository.save(conversations);
 
-        Integer conversationId = conversations.getId();
+        return conversations;
+    }
+
+    private void createGroupChats(List<Integer> groupUsers, Conversations conversation) {
+        Integer conversationId = conversation.getId();
+        UserEntity user = conversation.getCreatedBy();
         ChatPK chatPK = new ChatPK(conversationId, user.getId());
-        ChatEntity chat = new ChatEntity(chatPK, conversations, user);
+        ChatEntity chat = new ChatEntity(chatPK, conversation, user, null);
         chatRepository.save(chat);
 
-        for(Integer userId : groupRequest.getGroupUsers()) {
+        for(Integer userId : groupUsers) {
             UserEntity userEntity = findUser(userId);
             ChatPK pk = new ChatPK(conversationId, userId);
-            ChatEntity chatEntity = new ChatEntity(pk, conversations, userEntity);
+            ChatEntity chatEntity = new ChatEntity(pk, conversation, userEntity, null);
             chatRepository.save(chatEntity);
         }
-
-        GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getGroupUsers());
-        return new ChatDTO(conversationId, null, true, groupDTO);
     }
 
     private UserEntity findUser(Integer id) {
@@ -180,22 +231,21 @@ public class ChatServiceImpl implements ChatService{
 
     @Transactional
     public Conversations createConversation() {
-        Conversations conversations = new Conversations(null, LocalDate.now(),null,null, ConversationType.CHAT);
+        Conversations conversations = new Conversations(null, LocalDate.now(),null,null, ConversationType.CHAT, LocalDateTime.now());
         conversationRepository.save(conversations);
 
         return conversations;
     }
 
     @Transactional
-    public UserEntity createChats(Conversations conversation, Integer userId) {
+    public void createChats(Conversations conversation, Integer userId) {
         ContactEntity contact = getContact(userId);
         ChatPK chatPK = new ChatPK(conversation.getId(), contact.getUser().getId());
         ChatPK chatPK2 = new ChatPK(conversation.getId(), contact.getContact().getId());
-        ChatEntity chat1 = new ChatEntity(chatPK,conversation, contact.getUser());
-        ChatEntity chat2 = new ChatEntity(chatPK2,conversation, contact.getContact());
+        ChatEntity chat1 = new ChatEntity(chatPK,conversation, contact.getUser(), null);
+        ChatEntity chat2 = new ChatEntity(chatPK2,conversation, contact.getContact(), null);
         chatRepository.save(chat1);
         chatRepository.save(chat2);
-        return contact.getUser();
     }
 
     @Override
@@ -212,12 +262,29 @@ public class ChatServiceImpl implements ChatService{
                 coincidences.getNumber(), coincidences.getTotalPages(), coincidences.getTotalElements());
     }
 
+    @Override
+    public void markLastMessageSeen(MessageSeenDTO messageSeenDTO) {
+        ChatPK pk = new ChatPK(messageSeenDTO.getChatId(), messageSeenDTO.getUserId());
+        ChatEntity chat = chatRepository.findById(pk)
+                .orElseThrow(()-> new ChatExceptions("Chat not found", 404));
+        Messages message = messageRepository.findById(messageSeenDTO.getMessageId())
+                .orElseThrow(()-> new ChatExceptions("Message not found", 404));
+        checkLastMessageSeen(chat.getLastMessageSeen(), message);
+        chat.setLastMessageSeen(message);
+        chatRepository.save(chat);
+    }
+
+    private void checkLastMessageSeen(Messages lastMessage, Messages newLastMessage) {
+        if(lastMessage != null && !lastMessage.getSentAt().isBefore(newLastMessage.getSentAt())){
+            throw new ChatExceptions("New Last message must be sent after the last one", 400);
+        }
+    }
     private ChatDTO contactEntityToChatDto(ContactEntity entity) {
         ContactResponse response = new ContactResponse(entity.getId(), entity.getContact().getId(),
                 entity.getContact().getName(), entity.getContact().getEmail(), entity.getCreatedAt());
         Integer id = chatRepository.findConversationIdByUsers(entity.getContact().getId(), entity.getUser().getId())
                 .orElse(null);
-        return new ChatDTO(id, response, false, null);
+        return new ChatDTO(id, response, false, null, 0);
     }
 
     private MessageResponse messageToResponse(Messages message) {
@@ -226,11 +293,6 @@ public class ChatServiceImpl implements ChatService{
                 message.getUrl(), message.getSentAt());
     }
 
-    private GroupMessage messageToGroupMessage(Messages message) {
-        UserEntity user = message.getUser();
-        return new GroupMessage(message.getId(), message.getMessage(), message.getSentAt(),
-                user.getId(), user.getName());
-    }
 
     private <T> PaginatedListObject<T> getConversationMessages(Integer id, int page, int size, Function<Messages, T> mapFunction) {
         Pageable pageable = PageRequest.of(page, size);

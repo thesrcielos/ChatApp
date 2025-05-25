@@ -20,4 +20,6 @@ public class ChatEntity {
     @ManyToOne
     @MapsId("userId")
     private UserEntity user;
+    @ManyToOne
+    private Messages lastMessageSeen;
 }

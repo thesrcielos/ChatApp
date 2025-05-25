@@ -5,10 +5,12 @@ import com.ddev.MessageApp.chat.service.ChatService;
 import com.ddev.MessageApp.user.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,17 +57,20 @@ public class ChatController {
         return chatService.getUserContactsByPattern(id, pattern, page, size);
     }
 
-    @GetMapping("/group/conversation/{id}/messages")
-    @ResponseStatus(HttpStatus.OK)
-    public PaginatedListObject<GroupMessage>  getGroupMessages(@PathVariable Integer id, int page, int size){
-        return chatService.getGroupMessages(id,page,size);
-    }
-
     @PostMapping("/group/conversations")
     @ResponseStatus(HttpStatus.CREATED)
     public ChatDTO createGroup(@RequestBody GroupRequest request) {
         System.out.println("request = " + request);
         return chatService.createGroup(request);
+    }
+
+    @GetMapping("/conversation/{id}/messages/before")
+    @ResponseStatus(HttpStatus.OK)
+    public PaginatedListObject<MessageResponse> getPreviousMessages(
+            @PathVariable Integer id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)LocalDateTime beforeDate,
+            @RequestParam(defaultValue = "15") Integer size) {
+        return chatService.getMessagesBefore(id, beforeDate, size);
     }
 
     @PostMapping("/messages")
