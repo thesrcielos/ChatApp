@@ -38,7 +38,7 @@ public class UserServiceTest {
         Integer id = 1;
         String name = "diego";
         String email = "diego@gmail.com";
-        Optional<UserEntity> entity = Optional.of(new UserEntity(id, name, ",,", email, Role.USER));
+        Optional<UserEntity> entity = Optional.of(new UserEntity(id, name, ",,", email, Role.USER, null));
 
         UserDTO dto = new UserDTO(id, name, email);
         when(userRepository.findById(id)).thenReturn(entity);
@@ -74,7 +74,7 @@ public class UserServiceTest {
                 1,
                 registerDTO.getName(),
                 registerDTO.getPassword(),
-                registerDTO.getEmail(), Role.USER);
+                registerDTO.getEmail(), Role.USER, null);
         when(userRepository.save(user)).thenReturn(user);
 
         TokenDTO response = userService.createUser(registerDTO);

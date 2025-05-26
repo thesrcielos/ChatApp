@@ -15,4 +15,7 @@ public interface UserService {
     void changeName(Integer id, String name);
     void deleteUser(Integer userId);
     Integer getUserId();
+    UserDTO getUserById(Integer id);
+    void updateProfilePicture(Integer userId, String fileUrl);
+    void removeProfilePicture(Integer id);
 }

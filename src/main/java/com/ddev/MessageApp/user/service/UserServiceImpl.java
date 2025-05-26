@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
         null,
         registerDTO.getName(),
         passwordEncoder.encode(registerDTO.getPassword()),
-                registerDTO.getEmail(), Role.USER);
+                registerDTO.getEmail(), Role.USER, null);
         userRepository.save(user);
         return TokenDTO.builder().token(jwtService.getToken(user.getUsername())).build();
     }
@@ -106,4 +106,23 @@ public class UserServiceImpl implements UserService {
         return user.getId();
     }
 
+    @Override
+    public UserDTO getUserById(Integer id) {
+        UserEntity user = findUser(id);
+        return new UserDTO(user.getId(), user.getName(), user.getEmail(), user.getPicture());
+    }
+
+    @Override
+    public void updateProfilePicture(Integer userId, String fileUrl) {
+        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setProfilePictureUrl(fileUrl);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void removeProfilePicture(Integer id) {
+        UserEntity entity = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        entity.setPicture(null);
+        userRepository.save(entity);
+    }
 }

@@ -51,7 +51,7 @@ public class ChatServiceImpl implements ChatService{
     public List<UserDTO> getUsersInformation(Integer conversationId) {
         return chatRepository.getUsersChatInfo(conversationId)
                 .stream().map((user) ->
-                    new UserDTO(user.getId(), user.getName(), user.getEmail())
+                    new UserDTO(user.getId(), user.getName(), user.getEmail(), user.getPicture())
                 ).toList();
     }
 
