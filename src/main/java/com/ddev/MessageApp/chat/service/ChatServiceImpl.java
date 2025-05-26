@@ -73,7 +73,6 @@ public class ChatServiceImpl implements ChatService{
     public PaginatedListObject<MessageResponse> getMessagesBefore(Integer conversationId, LocalDateTime date, Integer size) {
         Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "sentAt"));
         Page<Messages> page = messageRepository.findByConversationsIdAndSentAtLessThan(conversationId, date, pageable);
-        page.get().forEach(System.out::println);
         List<MessageResponse> values = page.get()
                 .map(this::messageToResponse)
                 .sorted(Comparator.comparing(MessageResponse::getSentAt))
@@ -137,10 +136,17 @@ public class ChatServiceImpl implements ChatService{
 
         messageRepository.save(messages);
         updateLastActivity(conversation, message.getSentAt());
+        updateLastMessageSeen(conversation, messages, user);
 
         MessageResponse response = buildMessageResponse(message, messages, conversation, user);
         sendMessagesByWS(conversation, response, user.getEmail());
         return response;
+    }
+
+    private void updateLastMessageSeen(Conversations conversations, Messages messages, UserEntity user) {
+        ChatPK chatPK = new ChatPK(conversations.getId(), user.getId());
+        ChatEntity chat = chatRepository.findById(chatPK).orElseThrow(()-> new ChatExceptions("Chat not found", 404));
+        chat.setLastMessageSeen(messages);
     }
 
     private void updateLastActivity(Conversations conversation, LocalDateTime sentAt) {
