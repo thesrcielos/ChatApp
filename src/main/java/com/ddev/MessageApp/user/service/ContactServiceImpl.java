@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ public class ContactServiceImpl implements ContactService{
                 contact.getUser(), Status.ACCEPTED, LocalDateTime.now());
         contactRepository.save(contact);
         contactRepository.save(entity);
+        int[] a = new int[4];
     }
 
     @Override

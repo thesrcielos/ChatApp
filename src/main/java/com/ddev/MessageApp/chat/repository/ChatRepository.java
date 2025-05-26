@@ -1,6 +1,7 @@
 package com.ddev.MessageApp.chat.repository;
 
 import com.ddev.MessageApp.chat.model.ChatEntity;
+import com.ddev.MessageApp.chat.model.ChatPK;
 import com.ddev.MessageApp.user.model.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public interface ChatRepository extends JpaRepository<ChatEntity, Integer> {
+public interface ChatRepository extends JpaRepository<ChatEntity, ChatPK> {
     Page<ChatEntity> findByUserId(Integer userId, Pageable pageable);
 
     @Query(value = "SELECT user_id FROM chats WHERE conversation_id = :conversationId AND user_id <> :userId LIMIT 1", nativeQuery = true)

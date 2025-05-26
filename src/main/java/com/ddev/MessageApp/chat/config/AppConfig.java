@@ -24,8 +24,6 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
     private final JwtUtil jwtUtil;
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // /portfolio is the HTTP URL for the endpoint to which a WebSocket (or SockJS)
-        // client needs to connect for the WebSocket handshake
         registry.addEndpoint("/message")
                 .setAllowedOriginPatterns("*");
                 //.addInterceptors(new AuthHandshakeInterceptor(jwtUtil));
@@ -49,17 +47,16 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
                 if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     String token = accessor.getFirstNativeHeader("Authorization");
-                    if (token != null && token.startsWith("Bearer ")) {
-                        token = token.substring(7); // Remover "Bearer "
-                        Authentication authentication = jwtUtil.validateAndAuthenticate(token, null);
-                        if (authentication == null) {
-                            accessor.getSessionAttributes().put("close", true);
-                            throw new IllegalArgumentException("Authentication failed");
-                        }
-                        accessor.setUser(authentication);
-                    }else {
+                    if (token == null || !token.startsWith("Bearer ")) {
                         throw new IllegalArgumentException("Token invalid");
                     }
+                    token = token.substring(7); // Remover "Bearer "
+                    Authentication authentication = jwtUtil.validateAndAuthenticate(token, null);
+                    if (authentication == null) {
+                        accessor.getSessionAttributes().put("close", true);
+                        throw new IllegalArgumentException("Authentication failed");
+                    }
+                    accessor.setUser(authentication);
                 }
                 return message;
             }

@@ -44,16 +44,12 @@ public class AuthService {
     private String redirectUri;
 
     public TokenDTO processGoogleAuthCode(String code) {
-        // 1. Intercambiar el código por tokens de Google
         GoogleTokenResponse googleTokens = exchangeCodeForTokens(code);
 
-        // 2. Obtener información del usuario usando el access token
         GoogleUserInfo userInfo = getUserInfo(googleTokens.getAccess_token());
 
-        // 3. Crear o actualizar usuario en tu base de datos
         UserEntity user = findOrCreateUser(userInfo);
 
-        // 4. Generar tu propio JWT token
         String jwtToken = jwtUtil.getToken(user.getEmail());
 
         return new TokenDTO(jwtToken);

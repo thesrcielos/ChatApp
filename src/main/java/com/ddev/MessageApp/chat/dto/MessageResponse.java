@@ -1,10 +1,7 @@
 package com.ddev.MessageApp.chat.dto;
 
 import com.ddev.MessageApp.chat.model.FileType;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,6 +10,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class MessageResponse {
     private String message;
     private Integer conversationId;
