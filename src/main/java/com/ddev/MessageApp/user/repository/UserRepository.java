@@ -15,7 +15,20 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     Optional<UserEntity> findByEmail(String email);
     boolean existsByEmail(String email);
-    Page<UserEntity> findByEmailContainingIgnoreCaseAndNameContainingIgnoreCase(String email,String name, Pageable pageable);
+    @Query("""
+    SELECT u FROM UserEntity u
+    WHERE (LOWER(u.name) LIKE LOWER(CONCAT('%', :pattern, '%')) 
+           OR LOWER(u.email) LIKE LOWER(CONCAT('%', :pattern, '%')))
+      AND u.id <> :userId
+      AND u.id NOT IN (
+          SELECT c.contact.id FROM ContactEntity c 
+          WHERE c.user.id = :userId OR c.contact.id = :userId
+      )
+""")
+    Page<UserEntity> searchPotentialContacts(@Param("pattern") String pattern,
+                                             @Param("userId") Integer userId,
+                                             Pageable pageable);
+
 
     @Query("""
             SELECT u FROM UserEntity u

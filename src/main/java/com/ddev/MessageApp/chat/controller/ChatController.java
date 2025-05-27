@@ -60,7 +60,6 @@ public class ChatController {
     @PostMapping("/group/conversations")
     @ResponseStatus(HttpStatus.CREATED)
     public ChatDTO createGroup(@RequestBody GroupRequest request) {
-        System.out.println("request = " + request);
         return chatService.createGroup(request);
     }
 

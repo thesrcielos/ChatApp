@@ -94,9 +94,9 @@ public class ContactServiceImpl implements ContactService{
     }
 
     @Override
-    public PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int page, int size) {
+    public PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int userId,int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<UserEntity> coincidences = userRepository.findByEmailContainingIgnoreCaseAndNameContainingIgnoreCase(pattern, pattern,pageable);
+        Page<UserEntity> coincidences = userRepository.searchPotentialContacts(pattern, userId, pageable);
         List<ContactSearch> users = coincidences.get()
                 .map(this::userEntityToContactSearch)
                 .toList();

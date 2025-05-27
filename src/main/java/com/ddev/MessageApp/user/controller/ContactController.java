@@ -67,16 +67,11 @@ public class ContactController {
         contactService.sendContactRequest(contactDTO);
     }
 
-    @GetMapping("/users/coincidences")
-    public ResponseEntity<PaginatedListObject<ContactSearch>> getContactCoincidences(@RequestParam String pattern,
-                                                                                     @RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
-    }
 
     @GetMapping("/users/{id}/coincidences")
     public ResponseEntity<PaginatedListObject<ContactSearch>> getContactCoincidences(@PathVariable Integer id, @RequestParam String pattern,
                                                                                      @RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, page, size));
+        return ResponseEntity.ok(contactService.getContactsByPattern(pattern, id,page, size));
     }
 
 }
