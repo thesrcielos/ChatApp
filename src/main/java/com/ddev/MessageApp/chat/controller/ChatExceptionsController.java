@@ -2,6 +2,8 @@ package com.ddev.MessageApp.chat.controller;
 
 import com.ddev.MessageApp.chat.dto.ErrorDetails;
 import com.ddev.MessageApp.chat.model.ChatExceptions;
+import com.ddev.MessageApp.chat.model.UserExceptions;
+import com.ddev.MessageApp.user.exception.UserException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,5 +21,15 @@ public class ChatExceptionsController {
                 .date(LocalDateTime.now())
                 .build();
         return new ResponseEntity<>(errorDetails, HttpStatusCode.valueOf(ex.code));
+    }
+
+    @ExceptionHandler(UserExceptions.class)
+    public ResponseEntity<ErrorDetails> handleUserExceptions(UserException ex){
+        ErrorDetails errorDetails = ErrorDetails
+                .builder()
+                .message(ex.getMessage())
+                .date(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(errorDetails, HttpStatusCode.valueOf(ex.getCode()));
     }
 }

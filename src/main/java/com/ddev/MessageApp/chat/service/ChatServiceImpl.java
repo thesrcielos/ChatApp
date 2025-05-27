@@ -24,9 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 
 @Service
@@ -168,7 +166,7 @@ public class ChatServiceImpl implements ChatService{
     }
 
     private Conversations getOrCreateConversation(Message message) {
-        if (message.getConversationId() == null) {
+        if (message.getConversationId() == null || message.getConversationId() < 0) {
             Conversations conversation = createConversation();
             createChats(conversation, message.getContactId());
             return conversation;
@@ -180,7 +178,6 @@ public class ChatServiceImpl implements ChatService{
     private UserEntity getUserForConversation(Conversations conversation, Message message) {
         return findUser(conversation.getType(), message.getContactId());
     }
-
 
     private void sendMessagesByWS(Conversations conversations, MessageResponse response, String userEmail) {
         List<String> userEmails = chatRepository.getUserEmailListFromChat(conversations.getId(), userEmail);
@@ -199,10 +196,11 @@ public class ChatServiceImpl implements ChatService{
     @Transactional
     public ChatDTO createGroup(GroupRequest groupRequest) {
         Conversations conversations = createGroupConversation(groupRequest.getUserId(), groupRequest.getName());
-        createGroupChats(groupRequest.getGroupUsers(), conversations);
+        List<String> memberEmails = createGroupChats(groupRequest.getGroupUsers(), conversations);
         GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getGroupUsers());
-
-        return new ChatDTO(conversations.getId(), null, true, groupDTO, 0);
+        ChatDTO response = new ChatDTO(conversations.getId(), null, true, groupDTO, 0);
+        memberEmails.forEach((email)-> messagingTemplate.convertAndSendToUser(email, "/topic/chat", response));
+        return response;
     }
 
     private Conversations createGroupConversation(Integer userId, String name) {
@@ -213,19 +211,21 @@ public class ChatServiceImpl implements ChatService{
         return conversations;
     }
 
-    private void createGroupChats(List<Integer> groupUsers, Conversations conversation) {
+    private List<String> createGroupChats(List<Integer> groupUsers, Conversations conversation) {
         Integer conversationId = conversation.getId();
         UserEntity user = conversation.getCreatedBy();
         ChatPK chatPK = new ChatPK(conversationId, user.getId());
         ChatEntity chat = new ChatEntity(chatPK, conversation, user, null);
         chatRepository.save(chat);
-
+        List<String> emails = new ArrayList<>();
         for(Integer userId : groupUsers) {
             UserEntity userEntity = findUser(userId);
+            emails.add(userEntity.getEmail());
             ChatPK pk = new ChatPK(conversationId, userId);
             ChatEntity chatEntity = new ChatEntity(pk, conversation, userEntity, null);
             chatRepository.save(chatEntity);
         }
+        return emails;
     }
 
     private UserEntity findUser(Integer id) {
@@ -252,8 +252,13 @@ public class ChatServiceImpl implements ChatService{
         ChatEntity chat2 = new ChatEntity(chatPK2,conversation, contact.getContact(), null);
         chatRepository.save(chat1);
         chatRepository.save(chat2);
+        sendNewChatsToUsers(chat1, chat2);
     }
 
+    private void sendNewChatsToUsers(ChatEntity chat1, ChatEntity chat2){
+        messagingTemplate.convertAndSendToUser(chat1.getUser().getEmail(), "/topic/chat", chatEntityToDTO(chat1));
+        messagingTemplate.convertAndSendToUser(chat2.getUser().getEmail(), "/topic/chat", chatEntityToDTO(chat2));
+    }
     @Override
     public PaginatedListObject<ChatDTO> getUserContactsByPattern(Integer id, String pattern, int page, int size) {
         if (pattern.isEmpty()) {
@@ -289,7 +294,7 @@ public class ChatServiceImpl implements ChatService{
         ContactResponse response = new ContactResponse(entity.getId(), entity.getContact().getId(),
                 entity.getContact().getName(), entity.getContact().getEmail(), entity.getCreatedAt());
         Integer id = chatRepository.findConversationIdByUsers(entity.getContact().getId(), entity.getUser().getId())
-                .orElse(null);
+                .orElse(entity.getId()*(-1));
         return new ChatDTO(id, response, false, null, 0);
     }
 

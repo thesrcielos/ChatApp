@@ -31,8 +31,6 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // STOMP messages whose destination header begins with /app are routed to
-        // @MessageMapping methods in @Controller classes
         config.setApplicationDestinationPrefixes("/app");
         // Use the built-in message broker for subscriptions and broadcasting and
         // route messages whose destination header begins with /topic or /queue to the broker
