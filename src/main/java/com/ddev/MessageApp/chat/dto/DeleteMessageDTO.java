@@ -1,12 +1,13 @@
 package com.ddev.MessageApp.chat.dto;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Getter
-public class EditMessageDTO {
+@Setter
+public class DeleteMessageDTO {
     private UUID id;
     private Integer userId;
-    private String message;
 }

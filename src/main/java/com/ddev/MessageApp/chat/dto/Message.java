@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @ToString
 public class Message {
-    private String content;
+    private String message;
     private Integer conversationId;
     private Integer contactId;
     private LocalDateTime sentAt;

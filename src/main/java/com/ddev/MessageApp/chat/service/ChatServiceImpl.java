@@ -13,7 +13,6 @@ import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.ContactRepository;
 import com.ddev.MessageApp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,11 +37,24 @@ public class ChatServiceImpl implements ChatService{
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
-    public void deleteMessage(UUID id) {
-        if(!messageRepository.existsById(id)) {
+    public void deleteMessage(DeleteMessageDTO deleteMessageDTO) {
+        UUID id = deleteMessageDTO.getId();
+        if(!messageRepository.existsById(deleteMessageDTO.getId())) {
             throw new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404);
         }
+        Messages messages = messageRepository.findById(id).orElse(null);
+        if(messages.getUser().getId() == deleteMessageDTO.getUserId()){
+            throw new ChatExceptions("User can just delete their own messages", 403);
+        }
         messageRepository.deleteById(id);
+
+        Integer conversationId = messages.getConversations().getId();
+        List<String> userEmails = chatRepository.getUserEmailListFromChat(conversationId,
+                messages.getUser().getEmail());
+        MessageModification messageModification = new MessageModification(null, conversationId, id, MessageModificationType.DELETE);
+        userEmails.forEach(
+                (email)->messagingTemplate.convertAndSendToUser(email, "/topic/message-modification", messageModification)
+        );
     }
 
     @Override
@@ -57,8 +69,18 @@ public class ChatServiceImpl implements ChatService{
     public MessageEditResponse editMessage(EditMessageDTO editMessageDTO) {
         UUID id = editMessageDTO.getId();
         Messages message = messageRepository.findById(editMessageDTO.getId()).orElseThrow(() -> new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404));
+        if (message.getUser().getId() == editMessageDTO.getUserId()){
+            throw new ChatExceptions("User cant edit a message that it's not theirs", 403);
+        }
         message.setMessage(editMessageDTO.getMessage());
         messageRepository.save(message);
+
+        Integer conversationId = message.getConversations().getId();
+        List<String> userEmails = chatRepository.getUserEmailListFromChat(conversationId,
+                message.getUser().getEmail());
+        MessageModification messageModification = new MessageModification(message.getMessage(), conversationId, id, MessageModificationType.EDIT);
+        userEmails.forEach((email)-> messagingTemplate.convertAndSendToUser(email, "/topic/message-modification", messageModification));
+
         return new MessageEditResponse( id, message.getMessage(), message.getSentAt());
     }
 
@@ -124,7 +146,7 @@ public class ChatServiceImpl implements ChatService{
         UserEntity user = getUserForConversation(conversation, message);
 
         Messages messages = Messages.builder()
-                .message(message.getContent())
+                .message(message.getMessage())
                 .conversations(conversation)
                 .user(user)
                 .type(message.getFileType())
