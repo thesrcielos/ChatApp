@@ -128,7 +128,7 @@ public class AuthService {
                 null,
                 registerDTO.getName(),
                 passwordEncoder.encode(registerDTO.getPassword()),
-                registerDTO.getEmail(), Role.USER);
+                registerDTO.getEmail(), Role.USER, null);
         userRepository.save(user);
         return TokenDTO.builder().token(jwtService.getToken(user.getUsername())).build();
     }

@@ -1,6 +1,7 @@
 package com.ddev.MessageApp.user.model;
 
 import com.ddev.MessageApp.user.dto.UserDTO;
+import com.google.cloud.PageImpl;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,6 +28,7 @@ public class UserEntity implements UserDetails {
     private String password;
     private String email;
     private Role role;
+    private String picture;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -39,6 +41,9 @@ public class UserEntity implements UserDetails {
     }
 
     public UserDTO toDTO() {
-        return new UserDTO(id, name, email);
+        return new UserDTO(id, name, email, picture);
+    }
+    public void setProfilePictureUrl(String newURL){
+        this.picture = newURL;
     }
 }
