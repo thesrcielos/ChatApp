@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ChatService {
-    void deleteMessage(UUID id);
+    void deleteMessage(DeleteMessageDTO deleteMessageDTO);
     List<UserDTO> getUsersInformation(Integer conversationId);
     MessageEditResponse editMessage(EditMessageDTO editMessageDTO);
     PaginatedListObject<MessageResponse> getChatMessages(Integer id, int page, int size);

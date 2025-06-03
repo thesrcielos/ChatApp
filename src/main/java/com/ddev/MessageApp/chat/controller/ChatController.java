@@ -32,18 +32,6 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getUserChats(id, page, size));
     }
 
-    @DeleteMapping("/conversation/{id}/message")
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteMessage(@PathVariable UUID id){
-        chatService.deleteMessage(id);
-    }
-
-    @PutMapping("/conversation/message")
-    @ResponseStatus(HttpStatus.OK)
-    public void editMessage(@RequestBody EditMessageDTO editMessageDTO){
-        chatService.editMessage(editMessageDTO);
-    }
-
     @GetMapping("/conversation/{id}/messages")
     @ResponseStatus(HttpStatus.OK)
     public PaginatedListObject<MessageResponse> getChatMessages(@PathVariable Integer id, int page, int size){
