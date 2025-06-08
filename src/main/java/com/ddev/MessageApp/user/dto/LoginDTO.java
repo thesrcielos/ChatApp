@@ -1,5 +1,7 @@
 package com.ddev.MessageApp.user.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,6 +12,10 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 public class LoginDTO {
-    private String password;
+    @NotBlank(message = "Email must not be blank")
+    @Email(message = "Email must be a valid format")
     private String email;
+
+    @NotBlank(message = "Password must not be blank")
+    private String password;
 }

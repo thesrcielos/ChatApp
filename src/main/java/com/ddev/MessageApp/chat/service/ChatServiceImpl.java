@@ -12,6 +12,7 @@ import com.ddev.MessageApp.user.model.ContactEntity;
 import com.ddev.MessageApp.user.model.UserEntity;
 import com.ddev.MessageApp.user.repository.ContactRepository;
 import com.ddev.MessageApp.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
+import static com.ddev.MessageApp.chat.util.PaginationValidator.validatePagination;
 
 @Service
 @RequiredArgsConstructor
@@ -86,11 +88,13 @@ public class ChatServiceImpl implements ChatService{
 
     @Override
     public PaginatedListObject<MessageResponse> getChatMessages(Integer id, int page, int size) {
+        validatePagination(page, size);
         return getConversationMessages(id, page, size, this::messageToResponse);
     }
 
     @Override
     public PaginatedListObject<MessageResponse> getMessagesBefore(Integer conversationId, LocalDateTime date, Integer size) {
+        validatePagination(0, size);
         Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "sentAt"));
         Page<Messages> page = messageRepository.findByConversationsIdAndSentAtLessThan(conversationId, date, pageable);
         List<MessageResponse> values = page.get()
@@ -102,6 +106,7 @@ public class ChatServiceImpl implements ChatService{
 
     @Override
     public PaginatedListObject<ChatDTO> getUserChats(Integer id, int page, int size) {
+        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<ChatEntity> result = chatRepository.findByUserId(id, pageable);
         List<ChatDTO> chats = result.get()
@@ -283,6 +288,7 @@ public class ChatServiceImpl implements ChatService{
     }
     @Override
     public PaginatedListObject<ChatDTO> getUserContactsByPattern(Integer id, String pattern, int page, int size) {
+        validatePagination(page, size);
         if (pattern.isEmpty()) {
             return getUserChats(id, page, size);
         }
