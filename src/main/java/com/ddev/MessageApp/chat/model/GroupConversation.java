@@ -10,6 +10,7 @@ import lombok.*;
 @Setter
 public class GroupConversation extends Conversations {
     private String name;
+    @ManyToOne
     private UserEntity createdBy;
     private String description;
 }
