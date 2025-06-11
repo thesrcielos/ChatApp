@@ -73,5 +73,10 @@ public class ContactController {
                                                                                      @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(contactService.getContactsByPattern(pattern, id,page, size));
     }
+    @DeleteMapping("/users/{id}/contact/{contactId}")
+    public void deleteContact(@PathVariable Integer id, @PathVariable Integer contactId){
+        contactService.deleteContact(id, contactId);
+    }
+
 
 }

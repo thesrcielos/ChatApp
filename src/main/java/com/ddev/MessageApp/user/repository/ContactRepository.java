@@ -6,6 +6,7 @@ import com.ddev.MessageApp.user.model.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -46,4 +47,7 @@ public interface ContactRepository extends JpaRepository<ContactEntity, Integer>
             "WHERE (c.user_id = :userId AND c.contact_id = :contactId) " +
             "   OR (c.user_id = :contactId AND c.contact_id = :userId)", nativeQuery = true)
     boolean existsContact(@Param("userId") Integer userId, @Param("contactId") Integer contactId);
+    @Modifying
+    @Query(value = "DELETE FROM contacts c WHERE c.user_id = :userId AND c.contact_id = :contactId", nativeQuery = true)
+    void deleteContactByIdUserAndContact(@Param("userId") Integer userId, @Param("contactId") Integer contactId);
 }

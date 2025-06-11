@@ -121,6 +121,14 @@ public class ContactServiceImpl implements ContactService{
                 Status.PENDING, null);
         contactRepository.save(contactEntity);
     }
+
+    @Override
+    @Transactional
+    public void deleteContact(Integer userId, Integer contactId) {
+        contactRepository.deleteContactByIdUserAndContact(userId, contactId);
+        contactRepository.deleteContactByIdUserAndContact(contactId, userId);
+    }
+
     private void verifyContact(UserEntity user, UserEntity contact) {
         if(user.getId().equals(contact.getId())){
             throw new UserException("Cannot send request to user", 404);

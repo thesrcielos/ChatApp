@@ -16,4 +16,5 @@ public interface ContactService {
     PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int userId,int page, int size);
     void rejectContactRequest(Integer id);
     void sendContactRequest(ContactDTO contactDTO);
+    void deleteContact(Integer userId, Integer contactId);
 }
