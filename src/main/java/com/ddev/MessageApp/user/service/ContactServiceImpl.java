@@ -1,6 +1,5 @@
 package com.ddev.MessageApp.user.service;
 
-import com.ddev.MessageApp.chat.dto.ChatDTO;
 import com.ddev.MessageApp.chat.dto.PaginatedListObject;
 import com.ddev.MessageApp.user.dto.ContactResponse;
 import com.ddev.MessageApp.user.dto.ContactSearch;
@@ -17,12 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import static com.ddev.MessageApp.chat.util.PaginationValidator.validatePagination;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -57,16 +53,19 @@ public class ContactServiceImpl implements ContactService{
 
     @Override
     public PaginatedListObject<ContactResponse> getUserBlockedContacts(Integer userId, int page, int size) {
+        validatePagination(page, size);
         return getUserContactsByState(userId, page, size, Status.BLOCKED);
     }
 
     @Override
     public PaginatedListObject<ContactResponse> getUserContacts(Integer userId, int page, int size) {
+        validatePagination(page, size);
         return getUserContactsByState(userId, page, size, Status.ACCEPTED);
     }
 
     @Override
     public PaginatedListObject<ContactResponse> getUserContactRequests(Integer userId, int page, int size) {
+        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<ContactEntity> response = contactRepository.findByContactIdAndStatus(userId, Status.PENDING, pageable);
         List<ContactResponse> users = response.getContent()
@@ -81,6 +80,7 @@ public class ContactServiceImpl implements ContactService{
 
     @Override
     public PaginatedListObject<ContactResponse> getUserContactRequestsSent(Integer userId, int page, int size) {
+        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<ContactEntity> response = contactRepository.findByUserIdAndStatus(userId, Status.PENDING, pageable);
         List<ContactResponse> users = response.getContent()
@@ -95,6 +95,7 @@ public class ContactServiceImpl implements ContactService{
 
     @Override
     public PaginatedListObject<ContactSearch> getContactsByPattern(String pattern, int userId,int page, int size) {
+        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<UserEntity> coincidences = userRepository.searchPotentialContacts(pattern, userId, pageable);
         List<ContactSearch> users = coincidences.get()
@@ -130,6 +131,7 @@ public class ContactServiceImpl implements ContactService{
     }
 
     private PaginatedListObject<ContactResponse> getUserContactsByState(Integer userId, int page, int size, Status status) {
+        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<ContactEntity> response = contactRepository.findNativeContactsByUserIdAndStatus(userId, status, pageable);
         List<ContactResponse> users = response.getContent()

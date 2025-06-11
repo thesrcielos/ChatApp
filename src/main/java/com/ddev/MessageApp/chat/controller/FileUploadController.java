@@ -7,6 +7,7 @@ import com.ddev.MessageApp.user.service.UserService;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.firebase.cloud.StorageClient;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,9 +29,9 @@ public class FileUploadController {
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadAudioFile(@RequestPart("file") MultipartFile file,
-                                             @RequestPart("data") Message message) {
+                                             @Valid @RequestPart("data") Message message) {
+        validateAudioFile(file);
         try {
-            // Upload to Firebase Storage
             Bucket bucket = StorageClient.getInstance().bucket();
             String uniqueFileName = UUID.randomUUID().toString();
             Blob blob = bucket.create(uniqueFileName, file.getBytes(), file.getContentType());
@@ -42,7 +43,7 @@ public class FileUploadController {
             message.setFileUrl(fileUrl);
             return ResponseEntity.ok().body(chatService.saveMessage(message));
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Error al subir el archivo");
+            return ResponseEntity.status(500).body("Error loading the file");
         }
     }
     @PostMapping(
@@ -51,8 +52,9 @@ public class FileUploadController {
     )
     public ResponseEntity<?> uploadProfilePicture(
             @RequestPart("file") MultipartFile file,
-            @RequestParam("userId") Integer userId    // ← cambio aquí
+            @RequestParam("userId") Integer userId
     ) {
+        validateImageFile(file);
         try {
             Bucket bucket = StorageClient.getInstance().bucket();
             String uniqueFileName = "profile_" + userId + "_" + UUID.randomUUID();
@@ -61,18 +63,47 @@ public class FileUploadController {
             String fileUrl = "https://firebasestorage.googleapis.com/v0/b/"
                     + bucket.getName() + "/o/" + blob.getName() + "?alt=media";
 
-            // Actualizas la URL en la base de datos del usuario
             userService.updateProfilePicture(userId, fileUrl);
 
             return ResponseEntity.ok(fileUrl);
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Error al subir la foto de perfil");
+            return ResponseEntity.status(500).body("Error loading the picture");
         }
     }
     @DeleteMapping("/{id}/profile-picture")
     public ResponseEntity<?> deleteProfilePicture(@PathVariable Integer id) {
         userService.removeProfilePicture(id);
         return ResponseEntity.ok().build();
+    }
+
+    private void validateAudioFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be empty");
+        }
+
+        if (!file.getContentType().startsWith("audio/")) {
+            throw new IllegalArgumentException("File must be an audio type");
+        }
+
+        long maxSizeInBytes = 10 * 1024 * 1024;
+        if (file.getSize() > maxSizeInBytes) {
+            throw new IllegalArgumentException("File size must not exceed 5MB");
+        }
+    }
+
+    private void validateImageFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be empty");
+        }
+
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            throw new IllegalArgumentException("File must be an image type");
+        }
+
+        long maxSizeInBytes = 10 * 1024 * 1024;
+        if (file.getSize() > maxSizeInBytes) {
+            throw new IllegalArgumentException("File size must not exceed 5MB");
+        }
     }
 
 }

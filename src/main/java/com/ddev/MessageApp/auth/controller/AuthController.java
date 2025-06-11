@@ -6,6 +6,7 @@ import com.ddev.MessageApp.auth.dto.TokenDTO;
 import com.ddev.MessageApp.user.dto.LoginDTO;
 import com.ddev.MessageApp.user.dto.RegisterDTO;
 import com.ddev.MessageApp.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +18,13 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final AuthService authService;
     @PostMapping("/token")
-    public ResponseEntity<TokenDTO> getToken(@RequestBody CodeDTO codeDTO){
+    public ResponseEntity<TokenDTO> getToken(@Valid @RequestBody CodeDTO codeDTO){
         return ResponseEntity.ok(authService.processGoogleAuthCode(codeDTO.getCode()));
     }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public TokenDTO loginUser(@RequestBody LoginDTO loginDTO){
+    public TokenDTO loginUser(@Valid @RequestBody LoginDTO loginDTO){
         return authService.login(loginDTO);
     }
 
