@@ -5,6 +5,7 @@ import com.ddev.MessageApp.chat.dto.*;
 import com.ddev.MessageApp.chat.model.*;
 import com.ddev.MessageApp.chat.repository.ChatRepository;
 import com.ddev.MessageApp.chat.repository.ConversationRepository;
+import com.ddev.MessageApp.chat.repository.GroupConversationRepository;
 import com.ddev.MessageApp.chat.repository.MessageRepository;
 import com.ddev.MessageApp.user.dto.ContactResponse;
 import com.ddev.MessageApp.user.dto.UserDTO;
@@ -36,6 +37,7 @@ public class ChatServiceImpl implements ChatService{
     private final UserRepository userRepository;
     private final ContactRepository contactRepository;
     private final ChatRepository chatRepository;
+    private final GroupConversationRepository groupConversationRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
@@ -124,14 +126,19 @@ public class ChatServiceImpl implements ChatService{
         LocalDateTime date = chat.getLastMessageSeen() != null ? chat.getLastMessageSeen().getSentAt() : LocalDateTime.now();
         Integer unseenMessages = messageRepository.countUnseenMessages(date, conversations.getId());
         if (conversations.getType().equals(ConversationType.GROUP)) {
+            GroupConversation groupConversation = getGroupConversation(conversations.getId());
             return new ChatDTO(conversations.getId(), null, true,
-                    conversationToGroupDto((GroupConversation) conversations), unseenMessages);
+                    conversationToGroupDto(groupConversation), unseenMessages);
         }
 
         return new ChatDTO(chat.getConversation().getId(), chatToContactResponse(chat),
                 false, null, unseenMessages);
     }
 
+    private GroupConversation getGroupConversation(Integer id){
+        return groupConversationRepository.findById(id)
+                .orElseThrow(()-> new ChatExceptions("Group chat nor found", 404));
+    }
     private ContactResponse chatToContactResponse(ChatEntity chat) {
         Integer id = chatRepository.findUserIdByConversationAndNotUser(chat.getConversation().getId(), chat.getUser().getId())
                 .orElseThrow(() -> new UserExceptions("The other user of the chat was not found", 400));
@@ -225,7 +232,7 @@ public class ChatServiceImpl implements ChatService{
     @Override
     @Transactional
     public ChatDTO createGroup(GroupRequest groupRequest) {
-        GroupConversation conversations = createGroupConversation(groupRequest.getUserId(), groupRequest.getName());
+        GroupConversation conversations = createGroupConversation(groupRequest.getUserId(), groupRequest.getName(), groupRequest.getDescription());
         List<String> memberEmails = createGroupChats(groupRequest.getGroupUsers(), conversations);
         GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getDescription(),groupRequest.getGroupUsers());
         ChatDTO response = new ChatDTO(conversations.getId(), null, true, groupDTO, 0);
@@ -233,13 +240,14 @@ public class ChatServiceImpl implements ChatService{
         return response;
     }
 
-    private GroupConversation createGroupConversation(Integer userId, String name) {
+    private GroupConversation createGroupConversation(Integer userId, String name, String description) {
         UserEntity user = findUser(userId);
         GroupConversation conversations = new GroupConversation();
         conversations.setCreatedBy(user);
         conversations.setCreatedAt(LocalDate.now());
         conversations.setLastActivity(LocalDateTime.now());
         conversations.setName(name);
+        conversations.setDescription(description);
         conversations.setType(ConversationType.GROUP);
         conversationRepository.save(conversations);
         return conversations;
