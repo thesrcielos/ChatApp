@@ -45,7 +45,7 @@ public class ChatServiceImpl implements ChatService{
             throw new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404);
         }
         Messages messages = messageRepository.findById(id).orElse(null);
-        if(messages.getUser().getId() == deleteMessageDTO.getUserId()){
+        if(messages.getUser().getId().equals(deleteMessageDTO.getUserId())){
             throw new ChatExceptions("User can just delete their own messages", 403);
         }
         messageRepository.deleteById(id);
@@ -71,7 +71,9 @@ public class ChatServiceImpl implements ChatService{
     public MessageEditResponse editMessage(EditMessageDTO editMessageDTO) {
         UUID id = editMessageDTO.getId();
         Messages message = messageRepository.findById(editMessageDTO.getId()).orElseThrow(() -> new ChatExceptions(ChatExceptions.MESSAGE_NOT_FOUND, 404));
-        if (message.getUser().getId() == editMessageDTO.getUserId()){
+        if (message.getUser().getId().equals(editMessageDTO.getUserId())){
+            System.out.println(message.getUser().getId());
+            System.out.println(editMessageDTO.getUserId());
             throw new ChatExceptions("User cant edit a message that it's not theirs", 403);
         }
         message.setMessage(editMessageDTO.getMessage());
@@ -91,6 +93,7 @@ public class ChatServiceImpl implements ChatService{
         validatePagination(page, size);
         return getConversationMessages(id, page, size, this::messageToResponse);
     }
+
 
     @Override
     public PaginatedListObject<MessageResponse> getMessagesBefore(Integer conversationId, LocalDateTime date, Integer size) {
@@ -122,7 +125,7 @@ public class ChatServiceImpl implements ChatService{
         Integer unseenMessages = messageRepository.countUnseenMessages(date, conversations.getId());
         if (conversations.getType().equals(ConversationType.GROUP)) {
             return new ChatDTO(conversations.getId(), null, true,
-                    conversationToGroupDto(conversations), unseenMessages);
+                    conversationToGroupDto((GroupConversation) conversations), unseenMessages);
         }
 
         return new ChatDTO(chat.getConversation().getId(), chatToContactResponse(chat),
@@ -139,9 +142,9 @@ public class ChatServiceImpl implements ChatService{
                 user.getEmail(), contact.getCreatedAt());
     }
 
-    private GroupDTO conversationToGroupDto(Conversations conversation) {
+    private GroupDTO conversationToGroupDto(GroupConversation conversation) {
         List<Integer> users = chatRepository.getUserListFromChat(conversation.getId());
-        return new GroupDTO(conversation.getName(), users);
+        return new GroupDTO(conversation.getName(), conversation.getDescription(),users);
     }
 
     @Transactional
@@ -222,23 +225,27 @@ public class ChatServiceImpl implements ChatService{
     @Override
     @Transactional
     public ChatDTO createGroup(GroupRequest groupRequest) {
-        Conversations conversations = createGroupConversation(groupRequest.getUserId(), groupRequest.getName());
+        GroupConversation conversations = createGroupConversation(groupRequest.getUserId(), groupRequest.getName());
         List<String> memberEmails = createGroupChats(groupRequest.getGroupUsers(), conversations);
-        GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getGroupUsers());
+        GroupDTO groupDTO = new GroupDTO(groupRequest.getName(), groupRequest.getDescription(),groupRequest.getGroupUsers());
         ChatDTO response = new ChatDTO(conversations.getId(), null, true, groupDTO, 0);
         memberEmails.forEach((email)-> messagingTemplate.convertAndSendToUser(email, "/topic/chat", response));
         return response;
     }
 
-    private Conversations createGroupConversation(Integer userId, String name) {
+    private GroupConversation createGroupConversation(Integer userId, String name) {
         UserEntity user = findUser(userId);
-        Conversations conversations = new Conversations(null, LocalDate.now(),user, name, ConversationType.GROUP, LocalDateTime.now());
+        GroupConversation conversations = new GroupConversation();
+        conversations.setCreatedBy(user);
+        conversations.setCreatedAt(LocalDate.now());
+        conversations.setLastActivity(LocalDateTime.now());
+        conversations.setName(name);
+        conversations.setType(ConversationType.GROUP);
         conversationRepository.save(conversations);
-
         return conversations;
     }
 
-    private List<String> createGroupChats(List<Integer> groupUsers, Conversations conversation) {
+    private List<String> createGroupChats(List<Integer> groupUsers, GroupConversation conversation) {
         Integer conversationId = conversation.getId();
         UserEntity user = conversation.getCreatedBy();
         ChatPK chatPK = new ChatPK(conversationId, user.getId());
@@ -264,7 +271,7 @@ public class ChatServiceImpl implements ChatService{
 
     @Transactional
     public Conversations createConversation() {
-        Conversations conversations = new Conversations(null, LocalDate.now(),null,null, ConversationType.CHAT, LocalDateTime.now());
+        Conversations conversations = new Conversations(null, LocalDate.now(), ConversationType.CHAT, LocalDateTime.now());
         conversationRepository.save(conversations);
 
         return conversations;

@@ -16,5 +16,5 @@ public class DeleteMessageDTO {
 
     @NotNull(message = "User ID cannot be null")
     @Positive(message = "User ID must be a positive number")
-    private Integer userId;
+    private Long userId;
 }

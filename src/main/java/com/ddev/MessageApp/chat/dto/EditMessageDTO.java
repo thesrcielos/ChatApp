@@ -15,7 +15,7 @@ public class EditMessageDTO {
 
     @NotNull(message = "User ID cannot be null")
     @Positive(message = "User ID must be a positive number")
-    private Integer userId;
+    private Long userId;
 
     @NotBlank(message = "Message cannot be blank")
     @Size(max = 1000, message = "Message must not exceed 1000 characters")

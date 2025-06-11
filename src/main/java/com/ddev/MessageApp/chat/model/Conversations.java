@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Conversations")
+@Inheritance(strategy = InheritanceType.JOINED)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,10 +18,8 @@ import java.time.LocalDateTime;
 public class Conversations {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-    private LocalDate createdAt;
-    private UserEntity createdBy;
-    private String name;
-    private ConversationType type;
-    private LocalDateTime lastActivity;
+    protected Integer id;
+    protected LocalDate createdAt;
+    protected ConversationType type;
+    protected LocalDateTime lastActivity;
 }
